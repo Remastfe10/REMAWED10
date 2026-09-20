@@ -1,0 +1,864 @@
+-- PRIVATE ADMIN PANEL PUBLIC PANEL CLASSIC (TRUE NOCLIP NO-WALK-BUG)
+-- Ottimizzato al 100% per Delta Executor - Noclip fluido senza bloccare i movimenti
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+local LocalPlayer = Players.LocalPlayer
+
+if game:GetService("CoreGui"):FindFirstChild("Remastfe10_Admin") then
+    game:GetService("CoreGui"):FindFirstChild("Remastfe10_Admin"):Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Remastfe10_Admin"
+ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ResetOnSpawn = false
+
+local states = {
+    Fly = false,
+    Noclip = false,
+    FlyJump = false,
+    FlyJumpHappy = false,
+    OldRoblox = false,
+    FPSOptimizer = false,
+    OrbitingParts = false,
+    Freeze = false,
+    AntiRagdoll = false,
+    KillAll = false,
+    AntiKick = false,
+    LunaryGravity = false,
+    Xray = false,
+    ESP = false,
+    UltraESP = false,
+    ESPTools = false,
+    LoadFlyGui = false,
+    Explode = false,
+    Spasm = false,
+    AntiSlap = false,
+    Wallhop = false,
+    Aimbot = false
+}
+
+local COLOR_OFF = Color3.fromRGB(45, 45, 45)
+local COLOR_ON = Color3.fromRGB(0, 180, 100)
+local TEXT_COLOR = Color3.fromRGB(255, 255, 255)
+local forcedSpeed = 16
+local forcedFlySpeed = 35
+local defaultGravity = workspace.Gravity
+
+local function makeDraggable(frame, handle)
+    local dragging, dragInput, dragStart, startPos
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+----------------------------------------------------------------
+-- INTERFACCIA GRAFICA MODERNA REMASTFE10
+----------------------------------------------------------------
+
+local MainPanel = Instance.new("Frame")
+MainPanel.Name = "MainPanel"
+MainPanel.Size = UDim2.new(0, 280, 0, 720)
+MainPanel.Position = UDim2.new(0.5, -140, 0.5, -360)
+MainPanel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainPanel.BorderSizePixel = 0
+MainPanel.Parent = ScreenGui
+
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainPanel
+
+local TitleBar = Instance.new("Frame")
+TitleBar.Name = "TitleBar"
+TitleBar.Size = UDim2.new(1, 0, 0, 45)
+TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainPanel
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 12)
+TitleCorner.Parent = TitleBar
+
+makeDraggable(MainPanel, TitleBar)
+
+local TitleText = Instance.new("TextLabel")
+TitleText.Size = UDim2.new(0.8, 0, 1, 0)
+TitleText.Position = UDim2.new(0.05, 0, 0, 0)
+TitleText.Text = "Public Panel Classic"
+TitleText.TextColor3 = Color3.fromRGB(255, 60, 60)
+TitleText.Font = Enum.Font.SourceSansBold
+TitleText.TextSize = 14
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.BackgroundTransparency = 1
+TitleText.Parent = TitleBar
+
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 35, 0, 35)
+CloseButton.Position = UDim2.new(1, -40, 0, 5)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = TEXT_COLOR
+CloseButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.TextSize = 18
+CloseButton.Parent = TitleBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.Parent = CloseButton
+
+local Container = Instance.new("ScrollingFrame")
+Container.Size = UDim2.new(1, -20, 1, -65)
+Container.Position = UDim2.new(0, 10, 0, 55)
+Container.BackgroundTransparency = 1
+Container.CanvasSize = UDim2.new(0, 0, 0, 1400)
+Container.ScrollBarThickness = 4
+Container.Parent = MainPanel
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = Container
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 8)
+
+local OpenBall = Instance.new("TextButton")
+OpenBall.Name = "OpenBall"
+OpenBall.Size = UDim2.new(0, 50, 0, 50)
+OpenBall.Position = UDim2.new(0.1, 0, 0.3, 0)
+OpenBall.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+OpenBall.Text = "REM"
+OpenBall.TextColor3 = TEXT_COLOR
+OpenBall.Font = Enum.Font.SourceSansBold
+OpenBall.TextSize = 16
+OpenBall.Visible = false
+OpenBall.Parent = ScreenGui
+
+local BallCorner = Instance.new("UICorner")
+BallCorner.CornerRadius = UDim.new(1, 0)
+BallCorner.Parent = OpenBall
+
+makeDraggable(OpenBall, OpenBall)
+
+----------------------------------------------------------------
+-- CREAZIONE PULSANTI
+----------------------------------------------------------------
+
+local function createToggle(name, labelText, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = COLOR_OFF
+    btn.Text = labelText .. ": OFF"
+    btn.TextColor3 = TEXT_COLOR
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 16
+    btn.Parent = Container
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    btn.MouseButton1Click:Connect(function()
+        states[name] = not states[name]
+        if states[name] then
+            btn.BackgroundColor3 = COLOR_ON
+            btn.Text = labelText .. ": ON"
+        else
+            btn.BackgroundColor3 = COLOR_OFF
+            btn.Text = labelText .. ": OFF"
+        end
+        callback(states[name], btn)
+    end)
+    return btn
+end
+
+createToggle("ESPTools", "ESP Tools", function(active)
+    task.spawn(function()
+        while states.ESPTools do
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character then
+                    local hasTool = p.Character:FindFirstChildOfClass("Tool") or (p:FindFirstChild("Backpack") and p.Backpack:FindFirstChildOfClass("Tool"))
+                    local existingHighlight = p.Character:FindFirstChild("ESP_Tool_Highlight")
+                    
+                    if hasTool then
+                        if not existingHighlight then
+                            local h = Instance.new("Highlight", p.Character)
+                            h.Name = "ESP_Tool_Highlight"
+                            h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                            h.FillTransparency = 0.5
+                            task.spawn(function()
+                                while h and h.Parent do
+                                    h.FillColor = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+                                    task.wait(0.05)
+                                end
+                            end)
+                        end
+                    else
+                        if existingHighlight then existingHighlight:Destroy() end
+                    end
+                end
+            end
+            task.wait(0.5)
+        end
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("ESP_Tool_Highlight") then
+                p.Character.ESP_Tool_Highlight:Destroy()
+            end
+        end
+    end)
+end)
+
+createToggle("Aimbot", "Aimbot PVP", function(active) end)
+createToggle("Spasm", "Spasm", function(active, btn)
+    task.spawn(function()
+        while states.Spasm do
+            local char = LocalPlayer.Character
+            if char then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                
+                if hrp and hum then
+                    hum:ChangeState(Enum.HumanoidStateType.Swimming)
+                    hum.PlatformStand = true 
+                    
+                    if not hrp:FindFirstChild("SpasmDownForce") then
+                        local bf = Instance.new("BodyForce")
+                        bf.Name = "SpasmDownForce"
+                        bf.Force = Vector3.new(0, -workspace.Gravity * hrp:GetMass(), 0)
+                        bf.Parent = hrp
+                    end
+                end
+            end
+            task.wait()
+        end
+        
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            if hrp:FindFirstChild("SpasmDownForce") then hrp.SpasmDownForce:Destroy() end
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then 
+                hum.PlatformStand = false 
+                hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+            end
+        end
+    end)
+end)
+
+createToggle("Explode", "Explode (HappyMod)", function(active, btn)
+    if active then
+        local character = LocalPlayer.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+        
+        if hrp and humanoid then
+            humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+            
+            local bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(1,1,1) * 9e9
+            bv.Velocity = Vector3.new(math.random(-800,800), 800, math.random(-800,800))
+            bv.Parent = hrp
+            
+            local bg = Instance.new("BodyAngularVelocity")
+            bg.AngularVelocity = Vector3.new(0, 99999, 0)
+            bg.MaxTorque = Vector3.new(1,1,1) * 9e9
+            bg.Parent = hrp
+            
+            task.wait(1.5)
+            bv:Destroy()
+            bg:Destroy()
+            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end
+        states.Explode = false
+        btn.BackgroundColor3 = COLOR_OFF
+        btn.Text = "Explode (HappyMod): OFF"
+    end
+end)
+
+createToggle("Wallhop", "Wallhop", function(active) end)
+createToggle("AntiSlap", "Anti Slap (Non Official)", function(active)
+    if active then
+        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Anti-Slap-or-Fling-FOR-TROLL-GAMES-40702"))()
+    end
+end)
+
+createToggle("LoadFlyGui", "Load Fly Gui Unfficial", function(active)
+    if active then
+        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-FLY-GUI-V11-205450"))()
+    end
+end)
+
+createToggle("FPSOptimizer", "FPS Optimizer", function(active)
+    if active then
+        game:GetService("RunService"):Set3dRenderingEnabled(true)
+        local Terrain = workspace:FindFirstChildOfClass("Terrain")
+        if Terrain then
+            Terrain.WaterWaveSize = 0
+            Terrain.WaterReflectance = 0
+        end
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") or v:IsA("MeshPart") then
+                v.Material = Enum.Material.Plastic
+                v.Reflectance = 0
+            elseif v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") then
+                v.Enabled = false
+            end
+        end
+        game:GetService("Lighting").GlobalShadows = false
+        game:GetService("Lighting").FogEnd = 9e9
+    else
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") then
+                v.Enabled = true
+            end
+        end
+        game:GetService("Lighting").GlobalShadows = true
+        game:GetService("Lighting").FogEnd = 10000
+    end
+end)
+
+createToggle("Xray", "Xray", function(active)
+    if active then
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") and not v:IsDescendantOf(LocalPlayer.Character) then
+                if not v:FindFirstChild("OriginalTransparency") then
+                    local val = Instance.new("NumberValue")
+                    val.Name = "OriginalTransparency"
+                    val.Value = v.Transparency
+                    val.Parent = v
+                end
+                v.Transparency = 0.8
+            end
+        end
+    else
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") then
+                local original = v:FindFirstChild("OriginalTransparency")
+                if original then
+                    v.Transparency = original.Value
+                    original:Destroy()
+                else
+                    v.Transparency = 0
+                end
+            end
+        end
+    end
+end)
+
+createToggle("ESP", "ESP", function(active)
+    task.spawn(function()
+        while states.ESP do
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and not p.Character:FindFirstChild("ESP_Highlight") then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "ESP_Highlight"
+                    highlight.FillColor = Color3.fromRGB(0, 100, 255)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0
+                    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                    highlight.Parent = p.Character
+                end
+            end
+            task.wait(2)
+        end
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character and p.Character:FindFirstChild("ESP_Highlight") then
+                p.Character.ESP_Highlight:Destroy()
+            end
+        end
+    end)
+end)
+
+createToggle("UltraESP", "Ultra ESP", function(active)
+    task.spawn(function()
+        while states.UltraESP do
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and not p.Character:FindFirstChild("Ultra_Highlight") then
+                    local char = p.Character
+                    local hrp = char:WaitForChild("HumanoidRootPart", 1)
+                    if hrp then
+                        local highlight = Instance.new("Highlight")
+                        highlight.Name = "Ultra_Highlight"
+                        highlight.FillColor = Color3.fromRGB(0, 100, 255)
+                        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                        highlight.Parent = char
+                        
+                        local beam = Instance.new("Beam")
+                        beam.Name = "Ultra_Beam"
+                        beam.Color = ColorSequence.new(Color3.fromRGB(0, 100, 255))
+                        beam.Width0 = 0.2
+                        beam.Width1 = 0.2
+                        beam.FaceCamera = true
+                        beam.Parent = char
+                        
+                        local att0 = Instance.new("Attachment", LocalPlayer.Character:WaitForChild("HumanoidRootPart"))
+                        local att1 = Instance.new("Attachment", hrp)
+                        beam.Attachment0 = att0
+                        beam.Attachment1 = att1
+                    end
+                end
+            end
+            task.wait(2)
+        end
+        for _, p in pairs(Players:GetPlayers()) do
+            if p.Character then
+                if p.Character:FindFirstChild("Ultra_Highlight") then p.Character.Ultra_Highlight:Destroy() end
+                if p.Character:FindFirstChild("Ultra_Beam") then p.Character.Ultra_Beam:Destroy() end
+            end
+        end
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            for _, att in pairs(LocalPlayer.Character.HumanoidRootPart:GetChildren()) do if att:IsA("Attachment") then att:Destroy() end end
+        end
+    end)
+end)
+
+createToggle("OrbitingParts", "Briting Part", function(active)
+    task.spawn(function()
+        while states.OrbitingParts do
+            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local parts = {}
+                for _, v in pairs(workspace:GetDescendants()) do
+                    if v:IsA("BasePart") and not v.Anchored and v:IsDescendantOf(LocalPlayer.Character) == false and v.Size.Magnitude < 10 then
+                        table.insert(parts, v)
+                    end
+                end
+                for i, part in pairs(parts) do
+                    local angle = (i / #parts) * math.pi * 2 + tick() * 2
+                    local pos = hrp.Position + Vector3.new(math.cos(angle) * 0, 0, math.sin(angle) * 0)
+                    part.CFrame = CFrame.new(pos)
+                end
+            end
+            task.wait()
+        end
+    end)
+end)
+
+createToggle("Freeze", "Freeze", function(active)
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.Anchored = active
+    end
+end)
+
+createToggle("AntiRagdoll", "Anti Ragdoll (BETA)", function(active) end)
+
+createToggle("KillAll", "Kill all (FOR PVP GAMES)", function(active)
+    task.spawn(function()
+        local currentIndex = 1
+        while states.KillAll do
+            local playersList = Players:GetPlayers()
+            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            
+            if myHrp and #playersList > 1 then
+                currentIndex = (currentIndex % #playersList) + 1
+                local targetPlayer = playersList[currentIndex]
+                if targetPlayer ~= LocalPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    myHrp.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
+                end
+            end
+            task.wait(5)
+        end
+    end)
+end)
+
+createToggle("AntiKick", "AntiKick (BETA)", function(active)
+    if active then
+        warn("AntiKick attivato: Attenzione, la protezione è limitata al client.")
+    end
+end)
+
+createToggle("LunaryGravity", "Lunary Gravity", function(active)
+    if active then
+        defaultGravity = workspace.Gravity
+        workspace.Gravity = 0
+    else
+        workspace.Gravity = defaultGravity
+    end
+end)
+
+local wsFrame = Instance.new("Frame")
+wsFrame.Size = UDim2.new(1, 0, 0, 40)
+wsFrame.BackgroundTransparency = 1
+wsFrame.Parent = Container
+
+local wsLabel = Instance.new("TextLabel")
+wsLabel.Size = UDim2.new(0.6, 0, 1, 0)
+wsLabel.Text = " WalkSpeed Fissa:"
+wsLabel.TextColor3 = TEXT_COLOR
+wsLabel.Font = Enum.Font.SourceSansBold
+wsLabel.TextSize = 16
+wsLabel.TextXAlignment = Enum.TextXAlignment.Left
+wsLabel.BackgroundTransparency = 1
+wsLabel.Parent = wsFrame
+
+local wsInput = Instance.new("TextBox")
+wsInput.Size = UDim2.new(0.35, 0, 1, 0)
+wsInput.Position = UDim2.new(0.65, 0, 0, 0)
+wsInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+wsInput.Text = "16"
+wsInput.TextColor3 = TEXT_COLOR
+wsInput.Font = Enum.Font.SourceSansBold
+wsInput.TextSize = 16
+wsInput.Parent = wsFrame
+
+local wsInputCorner = Instance.new("UICorner")
+wsInputCorner.CornerRadius = UDim.new(0, 6)
+wsInputCorner.Parent = wsInput
+
+local flySpeedFrame = Instance.new("Frame")
+flySpeedFrame.Size = UDim2.new(1, 0, 0, 40)
+flySpeedFrame.BackgroundTransparency = 1
+flySpeedFrame.Visible = false
+flySpeedFrame.Parent = Container
+
+local flySpeedLabel = Instance.new("TextLabel")
+flySpeedLabel.Size = UDim2.new(0.6, 0, 1, 0)
+flySpeedLabel.Text = " Velocità Volo (Fly):"
+flySpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
+flySpeedLabel.Font = Enum.Font.SourceSansBold
+flySpeedLabel.TextSize = 16
+flySpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+flySpeedLabel.BackgroundTransparency = 1
+flySpeedFrame.Parent = Container
+
+local flySpeedInput = Instance.new("TextBox")
+flySpeedInput.Size = UDim2.new(0.35, 0, 1, 0)
+flySpeedInput.Position = UDim2.new(0.65, 0, 0, 0)
+flySpeedInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+flySpeedInput.Text = "35"
+flySpeedInput.TextColor3 = TEXT_COLOR
+flySpeedInput.Font = Enum.Font.SourceSansBold
+flySpeedInput.TextSize = 16
+flySpeedInput.Parent = flySpeedFrame
+
+local flyInputCorner = Instance.new("UICorner")
+flyInputCorner.CornerRadius = UDim.new(0, 6)
+flySpeedInput.Parent = flySpeedFrame
+
+----------------------------------------------------------------
+-- LOGICA STRUTTURALE
+----------------------------------------------------------------
+
+CloseButton.MouseButton1Click:Connect(function()
+    MainPanel.Visible = false
+    OpenBall.Visible = true
+end)
+
+OpenBall.MouseButton1Click:Connect(function()
+    MainPanel.Visible = true
+    OpenBall.Visible = false
+end)
+
+flySpeedInput.FocusLost:Connect(function()
+    local num = tonumber(flySpeedInput.Text)
+    if num then forcedFlySpeed = num else flySpeedInput.Text = tostring(forcedFlySpeed) end
+end)
+
+local flyBV = nil
+local flyBG = nil
+local animConnection = nil
+
+createToggle("Fly", "Fly Player", function(active)
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = character.HumanoidRootPart
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local animateScript = character:FindFirstChild("Animate")
+
+    flySpeedFrame.Visible = active
+
+    if active then
+        if flyBV then flyBV:Destroy() end
+        if flyBG then flyBG:Destroy() end
+        if animConnection then animConnection:Disconnect() end
+
+        if animateScript then animateScript.Enabled = false end
+
+        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+            track:Stop(0)
+        end
+
+        animConnection = humanoid.AnimationPlayed:Connect(function(track)
+            track:Stop(0)
+        end)
+
+        humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+
+        flyBG = Instance.new("BodyGyro")
+        flyBG.MaxTorque = Vector3.new(1, 1, 1) * math.huge
+        flyBG.P = 90000
+        flyBG.CFrame = hrp.CFrame
+        flyBG.Parent = hrp
+
+        flyBV = Instance.new("BodyVelocity")
+        flyBV.MaxForce = Vector3.new(1, 1, 1) * math.huge
+        flyBV.Velocity = Vector3.new(0, 0, 0)
+        flyBV.Parent = hrp
+
+        task.spawn(function()
+            while states.Fly and character and hrp and humanoid do
+                local cam = workspace.CurrentCamera
+                local moveDirection = humanoid.MoveDirection
+                
+                humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+
+                local lookAt = cam.CFrame.LookVector
+                flyBG.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(lookAt.X, lookAt.Y, lookAt.Z))
+
+                if moveDirection.Magnitude > 0 then
+                    local finalVelocity = moveDirection * forcedFlySpeed
+                    if math.abs(lookAt.Y) > 0.2 then
+                        finalVelocity = Vector3.new(finalVelocity.X, lookAt.Y * forcedFlySpeed * (moveDirection.Z < 0 and -1 or (moveDirection.Z > 0 and 1 or 0)), finalVelocity.Z)
+                    end
+                    flyBV.Velocity = finalVelocity
+                else
+                    flyBV.Velocity = Vector3.new(0, 0, 0)
+                end
+                task.wait()
+            end
+            
+            if flyBV then flyBV:Destroy() end
+            if flyBG then flyBG:Destroy() end
+            if animConnection then animConnection:Disconnect() end
+            if animateScript then animateScript.Enabled = true end
+            if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Standing) end
+        end)
+    else
+        if flyBV then flyBV:Destroy() end
+        if flyBG then flyBG:Destroy() end
+        if animConnection then animConnection:Disconnect() end
+        if animateScript then animateScript.Enabled = true end
+        if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Standing) end
+    end
+end)
+
+createToggle("Noclip", "Noclip", function(active) end)
+createToggle("FlyJump", "FlyJump", function() end)
+createToggle("FlyJumpHappy", "FlyJump HappyMod", function() end)
+
+wsInput.FocusLost:Connect(function()
+    local num = tonumber(wsInput.Text)
+    if num then forcedSpeed = num else wsInput.Text = tostring(forcedSpeed) end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if states.Aimbot then
+        local closest = nil
+        local dist = math.huge
+        local cam = workspace.CurrentCamera
+        local myPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position
+        
+        if myPos then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local d = (p.Character.HumanoidRootPart.Position - myPos).Magnitude
+                    if d < dist then
+                        dist = d
+                        closest = p.Character.HumanoidRootPart
+                    end
+                end
+            end
+            if closest then
+                cam.CFrame = CFrame.new(cam.CFrame.Position, closest.Position)
+            end
+        end
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    local character = LocalPlayer.Character
+    if character then
+        if states.Noclip then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+        
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if not states.Fly then
+                humanoid.WalkSpeed = forcedSpeed
+            end
+            
+            if states.AntiRagdoll then
+                humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                humanoid.PlatformStand = false
+            end
+        end
+        
+        if states.Freeze and character:FindFirstChild("HumanoidRootPart") then
+            character.HumanoidRootPart.Anchored = true
+        end
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    
+    if not hum then return end
+
+    if states.Wallhop and hrp then
+        local params = RaycastParams.new()
+        params.FilterDescendantsInstances = {LocalPlayer.Character}
+        params.FilterType = Enum.RaycastFilterType.Exclude
+        local result = workspace:Raycast(hrp.Position, hrp.CFrame.LookVector * 5, params)
+        if result then
+            hrp.AssemblyLinearVelocity = Vector3.new(hrp.AssemblyLinearVelocity.X, 50, hrp.AssemblyLinearVelocity.Z)
+        end
+    end
+
+    if states.FlyJumpHappy then
+        for i = 1, 5 do 
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            task.wait(0.01)
+            hum:ChangeState(Enum.HumanoidStateType.Swimming)
+        end
+    elseif states.FlyJump then
+        hum:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+local NostalgiaGui = nil
+local function buildOldUI()
+    NostalgiaGui = Instance.new("ScreenGui")
+    NostalgiaGui.Name = "OldRoblox_Nostalgia"
+    NostalgiaGui.Parent = game:GetService("CoreGui")
+    
+    local OldChat = Instance.new("Frame")
+    OldChat.Name = "OldChatBox"
+    OldChat.Size = UDim2.new(0, 320, 0, 180)
+    OldChat.Position = UDim2.new(0, 15, 0, 15)
+    OldChat.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    OldChat.BackgroundTransparency = 0.65
+    OldChat.BorderSizePixel = 1
+    OldChat.BorderColor3 = Color3.fromRGB(100, 100, 100)
+    OldChat.Parent = NostalgiaGui
+    
+    local ChatTitle = Instance.new("TextLabel")
+    ChatTitle.Size = UDim2.new(1, 0, 0, 20)
+    ChatTitle.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    ChatTitle.Text = " Chat di Gioco Classica"
+    ChatTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ChatTitle.Font = Enum.Font.SourceSansBold
+    ChatTitle.TextSize = 14
+    ChatTitle.TextXAlignment = Enum.TextXAlignment.Left
+    ChatTitle.Parent = OldChat
+
+    local ChatHistory = Instance.new("TextLabel")
+    ChatHistory.Size = UDim2.new(1, -10, 1, -30)
+    ChatHistory.Position = UDim2.new(0, 5, 0, 25)
+    ChatHistory.BackgroundTransparency = 1
+    ChatHistory.Text = "[Sistema]: Nostalgia Mode Attiva!\n[Server]: Caricate HUD e animazioni R6 a blocchi.\n[Public Panel]: Pronto all'uso."
+    ChatHistory.TextColor3 = Color3.fromRGB(240, 240, 240)
+    ChatHistory.Font = Enum.Font.SourceSans
+    ChatHistory.TextSize = 14
+    ChatHistory.TextXAlignment = Enum.TextXAlignment.Left
+    ChatHistory.TextYAlignment = Enum.TextYAlignment.Top
+    ChatHistory.Parent = OldChat
+
+    local OldLeaderboard = Instance.new("Frame")
+    OldLeaderboard.Name = "OldLeaderboard"
+    OldLeaderboard.Size = UDim2.new(0, 170, 0, 220)
+    OldLeaderboard.Position = UDim2.new(1, -185, 0, 40)
+    OldLeaderboard.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    OldLeaderboard.BackgroundTransparency = 0.4
+    OldLeaderboard.BorderSizePixel = 2
+    OldLeaderboard.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    OldLeaderboard.Parent = NostalgiaGui
+
+    local ListHeader = Instance.new("TextLabel")
+    ListHeader.Size = UDim2.new(1, 0, 0, 25)
+    ListHeader.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    ListHeader.Text = "Giocatori"
+    ListHeader.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ListHeader.Font = Enum.Font.SourceSansBold
+    ListHeader.TextSize = 14
+    ListHeader.Parent = OldLeaderboard
+
+    local PlayerRow = Instance.new("Frame")
+    PlayerRow.Size = UDim2.new(1, 0, 0, 30)
+    PlayerRow.Position = UDim2.new(0, 0, 0, 28)
+    PlayerRow.BackgroundTransparency = 0.7
+    PlayerRow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    PlayerRow.Parent = OldLeaderboard
+
+    local NameLabel = Instance.new("TextLabel")
+    NameLabel.Size = UDim2.new(0.65, 0, 1, 0)
+    NameLabel.Position = UDim2.new(0, 5, 0, 0)
+    NameLabel.Text = LocalPlayer.Name
+    NameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NameLabel.Font = Enum.Font.SourceSans
+    NameLabel.TextSize = 14
+    NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    NameLabel.BackgroundTransparency = 1
+    NameLabel.Parent = PlayerRow
+end
+
+createToggle("OldRoblox", "Old Roblox Mode", function(active)
+    if active then
+        buildOldUI()
+        pcall(function()
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+        end)
+
+        task.spawn(function()
+            while states.OldRoblox do
+                local character = LocalPlayer.Character
+                if character then
+                    for _, joint in pairs(character:GetDescendants()) do
+                        if joint:IsA("Motor6D") and (
+                            joint.Name:find("Elbow") or joint.Name:find("Knee") or 
+                            joint.Name:find("Wrist") or joint.Name:find("Ankle")
+                        ) then
+                            joint.C0 = CFrame.new(joint.C0.Position)
+                            joint.C1 = CFrame.new(joint.C1.Position)
+                        end
+                    end
+                    local animateScript = character:FindFirstChild("Animate")
+                    if animateScript and animateScript:FindFirstChild("idle") then
+                        animateScript.idle.Animation1.AnimationId = "rbxassetid://180426354"
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+    else
+        if NostalgiaGui then 
+            NostalgiaGui:Destroy() 
+            NostalgiaGui = nil
+        end
+        pcall(function()
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
+            StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+        end)
+
+        local character = LocalPlayer.Character
+        local animateScript = character and character:FindFirstChild("Animate")
+        if animateScript then
+            animateScript.Enabled = false
+            task.wait(0.1)
+            animateScript.Enabled = true
+        end
+    end
+end)
