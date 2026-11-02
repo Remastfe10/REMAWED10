@@ -1,0 +1,473 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+
+-- Parametri Configurabili
+local DISTANZA_MASSIMA = 30 -- Raggio per Auto Slap
+local ALTEZZA_PIATTAFORMA = 60 -- Altezza piattaforma Slap All classico
+local DISTANZA_DIETRO = 1.8 -- Distanza precisa dietro la schiena
+
+-- Creazione GUI (Pannello allargato per 4 pulsanti)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "RemawedModsGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 260, 0, 310)
+MainFrame.Position = UDim2.new(0.5, -130, 0.4, -155)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = MainFrame
+
+-- Titolo
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 35)
+Title.Text = "remawed10 slap battles mods version 0"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 12
+Title.Font = Enum.Font.SourceSansBold
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+Title.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.Parent = Title
+
+-- Bottone Minimizza (-)
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+MinimizeBtn.Position = UDim2.new(1, -30, 0, 5)
+MinimizeBtn.Text = "-"
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 16
+MinimizeBtn.Font = Enum.Font.SourceSansBold
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+MinimizeBtn.Parent = Title
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 4)
+MinCorner.Parent = MinimizeBtn
+
+-- Info Mod / Versione (In Inglese)
+local RangeLabel = Instance.new("TextLabel")
+RangeLabel.Size = UDim2.new(0.9, 0, 0, 35)
+RangeLabel.Position = UDim2.new(0.05, 0, 0, 38)
+RangeLabel.Text = "This mod was launched with remawed10 v0.2. Currently, the mod version is 0."
+RangeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+RangeLabel.TextSize = 11
+RangeLabel.Font = Enum.Font.SourceSans
+RangeLabel.BackgroundTransparency = 1
+RangeLabel.TextWrapped = true
+RangeLabel.Parent = MainFrame
+
+-- Bottone Auto Slap
+local AutoSlapBtn = Instance.new("TextButton")
+AutoSlapBtn.Size = UDim2.new(0.85, 0, 0, 32)
+AutoSlapBtn.Position = UDim2.new(0.075, 0, 0.29, 0)
+AutoSlapBtn.Text = "Auto Slap: OFF"
+AutoSlapBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+AutoSlapBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoSlapBtn.Font = Enum.Font.SourceSansBold
+AutoSlapBtn.TextSize = 13
+AutoSlapBtn.Parent = MainFrame
+
+local BtnCorner1 = Instance.new("UICorner")
+BtnCorner1.CornerRadius = UDim.new(0, 6)
+BtnCorner1.Parent = AutoSlapBtn
+
+-- Bottone Slap All
+local SlapAllBtn = Instance.new("TextButton")
+SlapAllBtn.Size = UDim2.new(0.85, 0, 0, 32)
+SlapAllBtn.Position = UDim2.new(0.075, 0, 0.46, 0)
+SlapAllBtn.Text = "Slap All: OFF"
+SlapAllBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+SlapAllBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+SlapAllBtn.Font = Enum.Font.SourceSansBold
+SlapAllBtn.TextSize = 13
+SlapAllBtn.Parent = MainFrame
+
+local BtnCorner2 = Instance.new("UICorner")
+BtnCorner2.CornerRadius = UDim.new(0, 6)
+BtnCorner2.Parent = SlapAllBtn
+
+-- Bottone Anti Fling
+local AntiFlingBtn = Instance.new("TextButton")
+AntiFlingBtn.Size = UDim2.new(0.85, 0, 0, 32)
+AntiFlingBtn.Position = UDim2.new(0.075, 0, 0.63, 0)
+AntiFlingBtn.Text = "Anti Fling: OFF"
+AntiFlingBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+AntiFlingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AntiFlingBtn.Font = Enum.Font.SourceSansBold
+AntiFlingBtn.TextSize = 13
+AntiFlingBtn.Parent = MainFrame
+
+local BtnCorner3 = Instance.new("UICorner")
+BtnCorner3.CornerRadius = UDim.new(0, 6)
+BtnCorner3.Parent = AntiFlingBtn
+
+-- Bottone Auto Playing
+local AutoPlayingBtn = Instance.new("TextButton")
+AutoPlayingBtn.Size = UDim2.new(0.85, 0, 0, 32)
+AutoPlayingBtn.Position = UDim2.new(0.075, 0, 0.80, 0)
+AutoPlayingBtn.Text = "Auto Playing: OFF"
+AutoPlayingBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+AutoPlayingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoPlayingBtn.Font = Enum.Font.SourceSansBold
+AutoPlayingBtn.TextSize = 13
+AutoPlayingBtn.Parent = MainFrame
+
+local BtnCorner4 = Instance.new("UICorner")
+BtnCorner4.CornerRadius = UDim.new(0, 6)
+BtnCorner4.Parent = AutoPlayingBtn
+
+-- Stati
+local autoSlapActive = false
+local slapAllActive = false
+local antiFlingActive = false
+local autoPlayingActive = false
+local isExecuting = false
+local isMinimized = false
+
+-- Logica Minimizza
+MinimizeBtn.MouseButton1Click:Connect(function()
+	isMinimized = not isMinimized
+	if isMinimized then
+		MinimizeBtn.Text = "+"
+		MainFrame.Size = UDim2.new(0, 260, 0, 35)
+		RangeLabel.Visible = false
+		AutoSlapBtn.Visible = false
+		SlapAllBtn.Visible = false
+		AntiFlingBtn.Visible = false
+		AutoPlayingBtn.Visible = false
+	else
+		MinimizeBtn.Text = "-"
+		MainFrame.Size = UDim2.new(0, 260, 0, 310)
+		RangeLabel.Visible = true
+		AutoSlapBtn.Visible = true
+		SlapAllBtn.Visible = true
+		AntiFlingBtn.Visible = true
+		AutoPlayingBtn.Visible = true
+	end
+end)
+
+-- Piattaforma per Slap All normale
+local platform = Instance.new("Part")
+platform.Size = Vector3.new(12, 1, 12)
+platform.Anchored = true
+platform.CanCollide = true
+platform.Transparency = 0.4
+platform.BrickColor = BrickColor.new("Really black")
+platform.Parent = workspace
+
+task.spawn(function()
+	task.wait(1)
+	local myChar = LocalPlayer.Character
+	if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+		platform.Position = myChar.HumanoidRootPart.Position + Vector3.new(0, ALTEZZA_PIATTAFORMA, 0)
+	end
+end)
+
+-- Funzione per trovare la Part "Teleport1" nel workspace
+local function getTeleport1Part()
+	local p = workspace:FindFirstChild("Teleport1", true)
+	if p and p:IsA("BasePart") then
+		return p
+	end
+	return nil
+end
+
+-- Simula i click
+local function simulateClicks(count)
+	local viewportSize = workspace.CurrentCamera.ViewportSize
+	local centerX = viewportSize.X / 2
+	local centerY = viewportSize.Y / 2
+	
+	for i = 1, count do
+		VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 0)
+		task.wait(0.03)
+		VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 0)
+		task.wait(0.05)
+	end
+end
+
+-- Target più vicino (Auto Slap)
+local function getClosestTarget()
+	local myChar = LocalPlayer.Character
+	if not myChar or not myChar:FindFirstChild("HumanoidRootPart") then return nil end
+
+	local myPos = myChar.HumanoidRootPart.Position
+	local closestTarget = nil
+	local closestDist = DISTANZA_MASSIMA
+
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			local targetRoot = player.Character.HumanoidRootPart
+			local dist = (targetRoot.Position - myPos).Magnitude
+			
+			if dist <= closestDist then
+				closestDist = dist
+				closestTarget = targetRoot
+			end
+		end
+	end
+
+	return closestTarget
+end
+
+-- Target casuale (Slap All)
+local function getRandomTarget()
+	local validTargets = {}
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+			table.insert(validTargets, player.Character.HumanoidRootPart)
+		end
+	end
+	
+	if #validTargets > 0 then
+		return validTargets[math.random(1, #validTargets)]
+	end
+	return nil
+end
+
+-- Controlla se il player ha un tool nello zaino o equipaggiato
+local function hasTool()
+	local character = LocalPlayer.Character
+	local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+	
+	if character and character:FindFirstChildOfClass("Tool") then
+		return true
+	end
+	if backpack and backpack:FindFirstChildOfClass("Tool") then
+		return true
+	end
+	
+	return false
+end
+
+-- Anti Fling Logic
+local lastSafeCFrame = nil
+local timeInAir = 0
+
+task.spawn(function()
+	while true do
+		task.wait(0.1)
+		local myChar = LocalPlayer.Character
+		if myChar and myChar:FindFirstChild("HumanoidRootPart") and myChar:FindFirstChildOfClass("Humanoid") then
+			local myRoot = myChar.HumanoidRootPart
+			local humanoid = myChar:FindFirstChildOfClass("Humanoid")
+			
+			if humanoid.FloorMaterial ~= Enum.Material.Air then
+				if not slapAllActive and not autoPlayingActive then
+					lastSafeCFrame = myRoot.CFrame
+				end
+				timeInAir = 0
+			else
+				if antiFlingActive and not slapAllActive and not autoPlayingActive then
+					timeInAir = timeInAir + 0.1
+					if timeInAir >= 1.0 and lastSafeCFrame then
+						myRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+						myRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+						myRoot.CFrame = lastSafeCFrame
+						timeInAir = 0
+					end
+				end
+			end
+		end
+	end
+end)
+
+-- Gestione Respawn / Morte per Auto Playing
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+	task.wait(1)
+	if autoPlayingActive then
+		local tpPart = getTeleport1Part()
+		local root = newChar:WaitForChild("HumanoidRootPart", 5)
+		if tpPart and root then
+			root.CFrame = tpPart.CFrame + Vector3.new(0, 3, 0)
+		end
+	end
+end)
+
+-- Loop Auto Slap
+task.spawn(function()
+	while true do
+		task.wait(0.1)
+		if autoSlapActive and not slapAllActive and not autoPlayingActive and not isExecuting then
+			local myChar = LocalPlayer.Character
+			if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+				local targetRoot = getClosestTarget()
+				if targetRoot then
+					isExecuting = true
+					local myRoot = myChar.HumanoidRootPart
+					local originalCFrame = myRoot.CFrame
+					local humanoid = myChar:FindFirstChildOfClass("Humanoid")
+					
+					if humanoid then humanoid.PlatformStand = true end
+					myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, DISTANZA_DIETRO)
+					RunService.RenderStepped:Wait()
+					
+					simulateClicks(1)
+					task.wait(0.08)
+					
+					myRoot.CFrame = originalCFrame
+					if humanoid then humanoid.PlatformStand = false end
+					
+					task.wait(0.4)
+					isExecuting = false
+				end
+			end
+		end
+	end
+end)
+
+-- Loop Slap All Classico
+task.spawn(function()
+	while true do
+		task.wait(1)
+		if slapAllActive and not autoPlayingActive then
+			local myChar = LocalPlayer.Character
+			if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+				local targetRoot = getRandomTarget()
+				if targetRoot then
+					local myRoot = myChar.HumanoidRootPart
+					local humanoid = myChar:FindFirstChildOfClass("Humanoid")
+					
+					if humanoid then humanoid.PlatformStand = true end
+					myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, DISTANZA_DIETRO)
+					RunService.RenderStepped:Wait()
+					
+					simulateClicks(5)
+					
+					myRoot.CFrame = CFrame.new(platform.Position + Vector3.new(0, 3, 0))
+					if humanoid then humanoid.PlatformStand = false end
+				end
+			end
+		end
+	end
+end)
+
+-- Loop Auto Playing
+task.spawn(function()
+	while true do
+		task.wait(0.5)
+		if autoPlayingActive then
+			local myChar = LocalPlayer.Character
+			if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+				local myRoot = myChar.HumanoidRootPart
+				local tpPart = getTeleport1Part()
+				
+				if not hasTool() then
+					if tpPart then
+						myRoot.CFrame = tpPart.CFrame + Vector3.new(0, 3, 0)
+					end
+				else
+					local targetRoot = getRandomTarget()
+					if targetRoot and tpPart then
+						local humanoid = myChar:FindFirstChildOfClass("Humanoid")
+						if humanoid then humanoid.PlatformStand = true end
+						
+						myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, DISTANZA_DIETRO)
+						RunService.RenderStepped:Wait()
+						
+						simulateClicks(5)
+						
+						myRoot.CFrame = tpPart.CFrame + Vector3.new(0, 3, 0)
+						if humanoid then humanoid.PlatformStand = false end
+					end
+				end
+			end
+		end
+	end
+end)
+
+-- Toggle Auto Slap
+AutoSlapBtn.MouseButton1Click:Connect(function()
+	autoSlapActive = not autoSlapActive
+	if autoSlapActive then
+		slapAllActive = false
+		autoPlayingActive = false
+		SlapAllBtn.Text = "Slap All: OFF"
+		SlapAllBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+		AutoPlayingBtn.Text = "Auto Playing: OFF"
+		AutoPlayingBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+		
+		AutoSlapBtn.Text = "Auto Slap: ON"
+		AutoSlapBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+	else
+		AutoSlapBtn.Text = "Auto Slap: OFF"
+		AutoSlapBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+	end
+end)
+
+-- Toggle Slap All
+SlapAllBtn.MouseButton1Click:Connect(function()
+	slapAllActive = not slapAllActive
+	if slapAllActive then
+		autoSlapActive = false
+		autoPlayingActive = false
+		AutoSlapBtn.Text = "Auto Slap: OFF"
+		AutoSlapBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+		AutoPlayingBtn.Text = "Auto Playing: OFF"
+		AutoPlayingBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+		
+		SlapAllBtn.Text = "Slap All: ON"
+		SlapAllBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+		
+		local myChar = LocalPlayer.Character
+		if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+			myChar.HumanoidRootPart.CFrame = CFrame.new(platform.Position + Vector3.new(0, 3, 0))
+		end
+	else
+		SlapAllBtn.Text = "Slap All: OFF"
+		SlapAllBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+	end
+end)
+
+-- Toggle Anti Fling
+AntiFlingBtn.MouseButton1Click:Connect(function()
+	antiFlingActive = not antiFlingActive
+	if antiFlingActive then
+		AntiFlingBtn.Text = "Anti Fling: ON"
+		AntiFlingBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+		local myChar = LocalPlayer.Character
+		if myChar and myChar:FindFirstChild("HumanoidRootPart") then
+			lastSafeCFrame = myChar.HumanoidRootPart.CFrame
+		end
+	else
+		AntiFlingBtn.Text = "Anti Fling: OFF"
+		AntiFlingBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+	end
+end)
+
+-- Toggle Auto Playing
+AutoPlayingBtn.MouseButton1Click:Connect(function()
+	autoPlayingActive = not autoPlayingActive
+	if autoPlayingActive then
+		autoSlapActive = false
+		slapAllActive = false
+		AutoSlapBtn.Text = "Auto Slap: OFF"
+		AutoSlapBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+		SlapAllBtn.Text = "Slap All: OFF"
+		SlapAllBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+		
+		AutoPlayingBtn.Text = "Auto Playing: ON"
+		AutoPlayingBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+		
+		local tpPart = getTeleport1Part()
+		local myChar = LocalPlayer.Character
+		if tpPart and myChar and myChar:FindFirstChild("HumanoidRootPart") then
+			myChar.HumanoidRootPart.CFrame = tpPart.CFrame + Vector3.new(0, 3, 0)
+		end
+	else
+		AutoPlayingBtn.Text = "Auto Playing: OFF"
+		AutoPlayingBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+	end
+end)
