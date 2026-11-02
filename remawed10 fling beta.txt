@@ -1,0 +1,263 @@
+--[================================================================]--
+--  remawed10 click fling - Full Fixed (Client-side) con Pannello Draggable
+--[================================================================]--
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+local camera = Workspace.CurrentCamera
+
+-- Creazione della GUI principale
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "remawed10_Gui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Pannello principale (Frame)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 220, 0, 130)
+mainFrame.Position = UDim2.new(0, 50, 0, 50)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 10)
+mainCorner.Parent = mainFrame
+
+-- Barra superiore (Titolo + Trasccinamento + Minimizza)
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.Size = UDim2.new(1, 0, 0, 35)
+topBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+topBar.BorderSizePixel = 0
+topBar.Parent = mainFrame
+
+local topCorner = Instance.new("UICorner")
+topCorner.CornerRadius = UDim.new(0, 10)
+topCorner.Parent = topBar
+
+-- Fix angoli inferiori della topbar per farli dritti
+local fixCover = Instance.new("Frame")
+fixCover.Size = UDim2.new(1, 0, 0, 5)
+fixCover.Position = UDim2.new(0, 0, 1, -5)
+fixCover.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+fixCover.BorderSizePixel = 0
+fixCover.Parent = topBar
+
+-- Titolo del pannello
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -40, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 14
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "remawed10 hub fling beta"
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = topBar
+
+-- Pulsante Minimizza (-)
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 30, 0, 30)
+minimizeButton.Position = UDim2.new(1, -32, 0, 2)
+minimizeButton.BackgroundTransparency = 1
+minimizeButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+minimizeButton.TextSize = 16
+minimizeButton.Font = Enum.Font.GothamBold
+minimizeButton.Text = "-"
+minimizeButton.Parent = topBar
+
+-- Container per il contenuto interno (per gestire la minimizzazione)
+local contentContainer = Instance.new("Frame")
+contentContainer.Size = UDim2.new(1, 0, 1, -35)
+contentContainer.Position = UDim2.new(0, 0, 0, 35)
+contentContainer.BackgroundTransparency = 1
+contentContainer.Parent = mainFrame
+
+-- Bottone On/Off Fling
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Size = UDim2.new(1, -20, 0, 50)
+toggleButton.Position = UDim2.new(0, 10, 0, 15)
+toggleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.TextSize = 16
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.Text = "Fling: OFF"
+toggleButton.Parent = contentContainer
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 8)
+toggleCorner.Parent = toggleButton
+
+-- Logica di Trascinamento (Draggable) del Pannello
+local dragging, dragInput, dragStart, startPos
+
+topBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+topBar.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale, 
+			startPos.X.Offset + delta.X, 
+			startPos.Y.Scale, 
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- Logica Minimizza / Ottimizza
+local isMinimized = false
+minimizeButton.MouseButton1Click:Connect(function()
+	isMinimized = not isMinimized
+	if isMinimized then
+		mainFrame.Size = UDim2.new(0, 220, 0, 35)
+		contentContainer.Visible = false
+		minimizeButton.Text = "+"
+	else
+		mainFrame.Size = UDim2.new(0, 220, 0, 130)
+		contentContainer.Visible = true
+		minimizeButton.Text = "-"
+	end
+end)
+
+-- Gestione dello Stato Fling
+local isActive = false
+local isExecuting = false
+
+toggleButton.MouseButton1Click:Connect(function()
+	isActive = not isActive
+	if isActive then
+		toggleButton.Text = "Fling: ON"
+		toggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+	else
+		toggleButton.Text = "Fling: OFF"
+		toggleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	end
+end)
+
+-- Funzione principale di Fling a prova di bug
+mouse.Button1Down:Connect(function()
+	if not isActive or isExecuting then return end
+	
+	local target = mouse.Target
+	if not target then return end
+	
+	local character = target.Parent
+	if character:IsA("Accessory") or character:IsA("Hat") then
+		character = character.Parent
+	end
+	
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local targetRoot = character:FindFirstChild("HumanoidRootPart")
+	local myCharacter = player.Character
+	
+	if not humanoid or not targetRoot or not myCharacter then return end
+	local myRoot = myCharacter:FindFirstChild("HumanoidRootPart")
+	if not myRoot then return end
+	
+	isExecuting = true
+	local startTime = tick()
+	
+	-- Salva la posizione originale
+	local originalCFrame = myRoot.CFrame
+	
+	-- Sposta la visuale sulla vittima
+	camera.CameraSubject = humanoid
+	
+	-- Pulisci eventuali vecchi oggetti residui per evitare conflitti
+	local oldBav = myRoot:FindFirstChild("remawed10_Spin")
+	if oldBav then oldBav:Destroy() end
+	
+	-- Applica proprietà fisiche azzerate pulite
+	for _, part in ipairs(myCharacter:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+		end
+	end
+
+	-- Crea un nuovo BodyAngularVelocity pulito
+	local bav = Instance.new("BodyAngularVelocity")
+	bav.Name = "remawed10_Spin"
+	bav.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+	bav.AngularVelocity = Vector3.new(0, 99999, 0)
+	bav.Parent = myRoot
+	
+	local connection
+	connection = RunService.RenderStepped:Connect(function()
+		local elapsed = tick() - startTime
+		
+		-- Condizione di fine (10 secondi max o target morto o toggle spento)
+		if elapsed >= 10 or humanoid.Health <= 0 or not isActive then
+			connection:Disconnect()
+			
+			-- Distruggi l'oggetto di rotazione in modo sicuro
+			if bav and bav.Parent then bav:Destroy() end
+			
+			-- Ripristina le proprietà fisiche standard del personaggio
+			for _, part in ipairs(myCharacter:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CustomPhysicalProperties = nil
+				end
+			end
+			
+			-- Triplo respawn / ritorno rinforzato alla base
+			myRoot.CFrame = originalCFrame
+			myRoot.AssemblyLinearVelocity = Vector3.zero
+			myRoot.AssemblyAngularVelocity = Vector3.zero
+			
+			task.delay(0.1, function()
+				if myRoot and myCharacter then
+					myRoot.CFrame = originalCFrame
+					myRoot.AssemblyLinearVelocity = Vector3.zero
+				end
+			end)
+			
+			task.delay(0.25, function()
+				if myRoot and myCharacter then
+					myRoot.CFrame = originalCFrame
+					myRoot.AssemblyLinearVelocity = Vector3.zero
+					myRoot.AssemblyAngularVelocity = Vector3.zero
+					
+					local myHum = myCharacter:FindFirstChildOfClass("Humanoid")
+					if myHum then
+						camera.CameraSubject = myHum
+					end
+				end
+			end)
+			
+			isExecuting = false
+			return
+		end
+		
+		-- Aggancio millimetrico al centro del target + rotazione estrema
+		myRoot.CFrame = targetRoot.CFrame
+		myRoot.AssemblyLinearVelocity = Vector3.new(math.random(-600, 600), math.random(-600, 600), math.random(-600, 600))
+		myRoot.AssemblyAngularVelocity = Vector3.new(0, 99999, 0)
+	end)
+end)
