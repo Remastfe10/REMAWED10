@@ -1,0 +1,486 @@
+-- Servizi necessari
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local StarterGui = game:GetService("StarterGui")
+
+local localPlayer = Players.LocalPlayer
+local playerGui = localPlayer:WaitForChild("PlayerGui")
+local camera = Workspace.CurrentCamera
+
+-- ==========================================
+-- FUNZIONE 1: CODICE PER MOBILE
+-- ==========================================
+local function startMobileAimbot()
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "Remawed10AimbotGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = playerGui
+
+	local mainFrame = Instance.new("Frame")
+	mainFrame.Size = UDim2.new(0, 260, 0, 180)
+	mainFrame.Position = UDim2.new(0.5, -130, 0.3, 0)
+	mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	mainFrame.BorderSizePixel = 0
+	mainFrame.Active = true
+	mainFrame.Parent = screenGui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 10)
+	corner.Parent = mainFrame
+
+	local dragBar = Instance.new("TextButton")
+	dragBar.Size = UDim2.new(1, 0, 0, 35)
+	dragBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+	dragBar.Text = "  Remawed10 aimbot mobile (BETA)"
+	dragBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+	dragBar.TextSize = 14
+	dragBar.Font = Enum.Font.GothamBold
+	dragBar.TextXAlignment = Enum.TextXAlignment.Left
+	dragBar.AutoButtonColor = false
+	dragBar.Parent = mainFrame
+
+	local dragCorner = Instance.new("UICorner")
+	dragCorner.CornerRadius = UDim.new(0, 10)
+	dragCorner.Parent = dragBar
+
+	local welcomeLabel = Instance.new("TextLabel")
+	welcomeLabel.Size = UDim2.new(1, -20, 0, 40)
+	welcomeLabel.Position = UDim2.new(0, 10, 0, 45)
+	welcomeLabel.BackgroundTransparency = 1
+	welcomeLabel.Text = "welcome to aimbot mobile!. ⚠️BETA⚠️ "
+	welcomeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+	welcomeLabel.TextSize = 14
+	welcomeLabel.Font = Enum.Font.Gotham
+	welcomeLabel.TextWrapped = true
+	welcomeLabel.Parent = mainFrame
+
+	local toggleButton = Instance.new("TextButton")
+	toggleButton.Size = UDim2.new(1, -30, 0, 55)
+	toggleButton.Position = UDim2.new(0, 15, 0, 105)
+	toggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+	toggleButton.Text = "Aimbot: OFF"
+	toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+	toggleButton.TextSize = 16
+	toggleButton.Font = Enum.Font.GothamBold
+	toggleButton.Parent = mainFrame
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 8)
+	btnCorner.Parent = toggleButton
+
+	-- Sistema di trascinamento fluido
+	local dragging = false
+	local mousePos, framePos
+
+	dragBar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			mousePos = input.Position
+			framePos = mainFrame.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - mousePos
+			mainFrame.Position = UDim2.new(
+				framePos.X.Scale,
+				framePos.X.Offset + delta.X,
+				framePos.Y.Scale,
+				framePos.Y.Offset + delta.Y
+			)
+		end
+	end)
+
+	-- Stato dell'aimbot
+	local aimbotActive = false
+
+	toggleButton.MouseButton1Click:Connect(function()
+		aimbotActive = not aimbotActive
+		if aimbotActive then
+			toggleButton.Text = "Aimbot: ON"
+			toggleButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
+		else
+			toggleButton.Text = "Aimbot: OFF"
+			toggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+		end
+	end)
+
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+
+	local function getClosestVisibleTarget()
+		local character = localPlayer.Character
+		if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+
+		local myRootPart = character.HumanoidRootPart
+		local closestTarget = nil
+		local shortestDistance = math.huge
+
+		raycastParams.FilterDescendantsInstances = {character}
+		local origin = camera.CFrame.Position
+
+		for _, descendant in ipairs(Workspace:GetDescendants()) do
+			if descendant:IsA("Humanoid") and descendant.Health > 0 then
+				local model = descendant.Parent
+				if model and model:IsA("Model") and model ~= character then
+					local rootPart = model:FindFirstChild("HumanoidRootPart")
+						or model:FindFirstChild("Torso")
+						or model:FindFirstChild("UpperTorso")
+						or model:FindFirstChild("Head")
+
+					if rootPart then
+						local distance = (myRootPart.Position - rootPart.Position).Magnitude
+
+						if distance < shortestDistance then
+							local direction = (rootPart.Position - origin)
+							local raycastResult = Workspace:Raycast(origin, direction, raycastParams)
+
+							if raycastResult and raycastResult.Instance:IsDescendantOf(model) then
+								shortestDistance = distance
+								closestTarget = rootPart
+							end
+						end
+					end
+				end
+			end
+		end
+
+		return closestTarget
+	end
+
+	RunService.RenderStepped:Connect(function(dt)
+		if not aimbotActive then return end
+
+		local targetPart = getClosestVisibleTarget()
+		local character = localPlayer.Character
+
+		if targetPart and character and character:FindFirstChild("HumanoidRootPart") then
+			local myRootPart = character.HumanoidRootPart
+			local targetPosition = targetPart.Position + Vector3.new(0, 0.2, 0)
+
+			local currentCF = camera.CFrame
+			local targetCF = CFrame.new(currentCF.Position, targetPosition)
+			camera.CFrame = currentCF:Lerp(targetCF, math.clamp(dt * 35, 0, 1))
+
+			local lookAtVector = Vector3.new(targetPosition.X, myRootPart.Position.Y, targetPosition.Z)
+			myRootPart.CFrame = myRootPart.CFrame:Lerp(CFrame.new(myRootPart.Position, lookAtVector), math.clamp(dt * 35, 0, 1))
+		end
+	end)
+end
+
+-- ==========================================
+-- FUNZIONE 2: CODICE PER PC
+-- ==========================================
+local function startPCAimbot()
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "Remawed10AimbotHUD"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = playerGui
+
+	local hintBackground = Instance.new("Frame")
+	hintBackground.Size = UDim2.new(0, 280, 0, 40)
+	hintBackground.Position = UDim2.new(0.5, -140, 1, -70)
+	hintBackground.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+	hintBackground.BackgroundTransparency = 0.4
+	hintBackground.BorderSizePixel = 0
+	hintBackground.Parent = screenGui
+
+	local bgCorner = Instance.new("UICorner")
+	bgCorner.CornerRadius = UDim.new(0, 8)
+	bgCorner.Parent = hintBackground
+
+	local hintLabel = Instance.new("TextLabel")
+	hintLabel.Size = UDim2.new(1, 0, 1, 0)
+	hintLabel.BackgroundTransparency = 1
+	hintLabel.Text = "Press [P] to activate aimbot"
+	hintLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+	hintLabel.TextSize = 14
+	hintLabel.Font = Enum.Font.GothamBold
+	hintLabel.Parent = hintBackground
+
+	local aimbotActive = false
+
+	local function sendNotification(title, text)
+		StarterGui:SetCore("SendNotification", {
+			Title = title;
+			Text = text;
+			Icon = "rbxthumb://type=Asset&id=5107182114&w=150&h=150",
+			Duration = 3
+		})
+	end
+
+	local function toggleAimbot()
+		aimbotActive = not aimbotActive
+		if aimbotActive then
+			hintLabel.Text = "Press [B] to deactivate"
+			sendNotification("Remawed10 Aimbot", "AIMBOT ACTIVATE ⚠️BETA⚠️")
+		else
+			hintLabel.Text = "Press [P] to activate aimbot"
+			sendNotification("Remawed10 Aimbot", "AIMBOT OFF")
+		end
+	end
+
+	UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if gameProcessed then return end
+		if input.KeyCode == Enum.KeyCode.P then
+			toggleAimbot()
+		elseif input.KeyCode == Enum.KeyCode.B and aimbotActive then
+			toggleAimbot()
+		end
+	end)
+
+	task.spawn(function()
+		while true do
+			if not aimbotActive then
+				for i = 220, 100, -10 do
+					if aimbotActive then break end
+					hintLabel.TextColor3 = Color3.fromRGB(i, i, i)
+					task.wait(0.04)
+				end
+				for i = 100, 220, 10 do
+					if aimbotActive then break end
+					hintLabel.TextColor3 = Color3.fromRGB(i, i, i)
+					task.wait(0.04)
+				end
+			else
+				hintLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+				task.wait(1)
+			end
+			task.wait(0.05)
+		end
+	end)
+
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+
+	local function getClosestVisibleTarget()
+		local character = localPlayer.Character
+		if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+
+		local myRootPart = character.HumanoidRootPart
+		local closestTarget = nil
+		local shortestDistance = math.huge
+
+		raycastParams.FilterDescendantsInstances = {character}
+		local origin = camera.CFrame.Position
+
+		for _, descendant in ipairs(Workspace:GetDescendants()) do
+			if descendant:IsA("Humanoid") and descendant.Health > 0 then
+				local model = descendant.Parent
+				if model and model:IsA("Model") and model ~= character then
+					local rootPart = model:FindFirstChild("HumanoidRootPart")
+						or model:FindFirstChild("Torso")
+						or model:FindFirstChild("UpperTorso")
+						or model:FindFirstChild("Head")
+
+					if rootPart then
+						local distance = (myRootPart.Position - rootPart.Position).Magnitude
+
+						if distance < shortestDistance then
+							local direction = (rootPart.Position - origin)
+							local raycastResult = Workspace:Raycast(origin, direction, raycastParams)
+
+							if raycastResult and raycastResult.Instance:IsDescendantOf(model) then
+								shortestDistance = distance
+								closestTarget = rootPart
+							end
+						end
+					end
+				end
+			end
+		end
+
+		return closestTarget
+	end
+
+	RunService.RenderStepped:Connect(function(dt)
+		if not aimbotActive then return end
+
+		local targetPart = getClosestVisibleTarget()
+		local character = localPlayer.Character
+
+		if targetPart and character and character:FindFirstChild("HumanoidRootPart") then
+			local myRootPart = character.HumanoidRootPart
+			local targetPosition = targetPart.Position + Vector3.new(0, 0.2, 0)
+
+			local currentCF = camera.CFrame
+			local targetCF = CFrame.new(currentCF.Position, targetPosition)
+			camera.CFrame = currentCF:Lerp(targetCF, math.clamp(dt * 35, 0, 1))
+
+			local lookAtVector = Vector3.new(targetPosition.X, myRootPart.Position.Y, targetPosition.Z)
+			myRootPart.CFrame = myRootPart.CFrame:Lerp(CFrame.new(myRootPart.Position, lookAtVector), math.clamp(dt * 35, 0, 1))
+		end
+	end)
+end
+
+-- ==========================================
+-- SCHERMATA INIZIALE DI SELEZIONE DISPOSITIVO
+-- ==========================================
+local welcomeGui = Instance.new("ScreenGui")
+welcomeGui.Name = "OptimizedWelcomeGui"
+welcomeGui.ResetOnSpawn = false
+welcomeGui.IgnoreGuiInset = true
+welcomeGui.Parent = playerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(1, 0, 1, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+mainFrame.BackgroundTransparency = 0.1
+mainFrame.Parent = welcomeGui
+
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 16)
+uiCorner.Parent = mainFrame
+
+local contentFrame = Instance.new("Frame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Size = UDim2.new(0, 420, 0, 380)
+contentFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+contentFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+contentFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+contentFrame.BorderSizePixel = 0
+contentFrame.Parent = mainFrame
+
+local contentCorner = Instance.new("UICorner")
+contentCorner.CornerRadius = UDim.new(0, 12)
+contentCorner.Parent = contentFrame
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(0, 162, 255)
+uiStroke.Transparency = 0.5
+uiStroke.Thickness = 2
+uiStroke.Parent = contentFrame
+
+local locationLabel = Instance.new("TextLabel")
+locationLabel.Name = "LocationLabel"
+locationLabel.Size = UDim2.new(1, -40, 0, 40)
+locationLabel.Position = UDim2.new(0, 20, 0, 20)
+locationLabel.BackgroundTransparency = 1
+locationLabel.Font = Enum.Font.GothamBold
+locationLabel.Text = "REMAWED10 AIMBOT ⚠️BETA⚠️"
+locationLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+locationLabel.TextSize = 18
+locationLabel.TextXAlignment = Enum.TextXAlignment.Center
+locationLabel.Parent = contentFrame
+
+local phoneButton = Instance.new("TextButton")
+local phoneButtonCorner = Instance.new("UICorner")
+phoneButton.Name = "PhoneButton"
+phoneButton.Size = UDim2.new(0, 120, 0, 120)
+phoneButton.Position = UDim2.new(0.5, -135, 0, 80)
+phoneButton.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+phoneButton.Font = Enum.Font.GothamBold
+phoneButton.Text = "📱"
+phoneButton.TextSize = 60
+phoneButton.Parent = contentFrame
+phoneButtonCorner.CornerRadius = UDim.new(0, 16)
+phoneButtonCorner.Parent = phoneButton
+
+local pcButton = Instance.new("TextButton")
+local pcButtonCorner = Instance.new("UICorner")
+pcButton.Name = "PCButton"
+pcButton.Size = UDim2.new(0, 120, 0, 120)
+pcButton.Position = UDim2.new(0.5, 15, 0, 80)
+pcButton.BackgroundColor3 = Color3.fromRGB(35, 35, 55)
+pcButton.Font = Enum.Font.GothamBold
+pcButton.Text = "💻"
+pcButton.TextSize = 60
+pcButton.Parent = contentFrame
+pcButtonCorner.CornerRadius = UDim.new(0, 16)
+pcButtonCorner.Parent = pcButton
+
+local instructionLabel = Instance.new("TextLabel")
+instructionLabel.Name = "InstructionLabel"
+instructionLabel.Size = UDim2.new(1, -40, 0, 50)
+instructionLabel.Position = UDim2.new(0, 20, 0, 220)
+instructionLabel.BackgroundTransparency = 1
+instructionLabel.Font = Enum.Font.GothamMedium
+instructionLabel.TextColor3 = Color3.fromRGB(200, 200, 220)
+instructionLabel.TextSize = 15
+instructionLabel.TextWrapped = true
+instructionLabel.TextXAlignment = Enum.TextXAlignment.Center
+instructionLabel.Text = "Tap the phone icon (Mobile) or press [SPACEBAR] (PC)."
+instructionLabel.Parent = contentFrame
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Name = "StatusLabel"
+statusLabel.Size = UDim2.new(1, -40, 0, 40)
+statusLabel.Position = UDim2.new(0, 20, 0, 285)
+statusLabel.BackgroundTransparency = 1
+statusLabel.Font = Enum.Font.GothamBold
+statusLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
+statusLabel.TextSize = 18
+statusLabel.TextXAlignment = Enum.TextXAlignment.Center
+statusLabel.Text = ""
+statusLabel.Parent = contentFrame
+
+-- Variabili di controllo per evitare avvii multipli
+local selected = false
+local spaceConnection
+
+local function handleSelection(platform)
+	if selected then return end
+	selected = true
+
+	-- Disconnette l'ascolto della barra spaziatrice per evitare conflitti successivi
+	if spaceConnection then
+		spaceConnection:Disconnect()
+	end
+
+	phoneButton.Active = false
+	pcButton.Active = false
+
+	if platform == "Mobile" then
+		statusLabel.Text = "You play on mobile"
+	else
+		statusLabel.Text = "You play on PC"
+	end
+
+	task.delay(1.2, function()
+		if welcomeGui and welcomeGui.Parent then
+			local info = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			local t1 = TweenService:Create(mainFrame, info, {BackgroundTransparency = 1})
+			local t2 = TweenService:Create(contentFrame, info, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1})
+
+			t1:Play()
+			t2:Play()
+
+			t1.Completed:Connect(function()
+				welcomeGui:Destroy()
+				
+				-- Avvia lo script corrispondente alla scelta
+				if platform == "Mobile" then
+					startMobileAimbot()
+				else
+					startPCAimbot()
+				end
+			end)
+		end
+	end)
+end
+
+-- Eventi di selezione
+phoneButton.MouseButton1Click:Connect(function()
+	handleSelection("Mobile")
+end)
+
+pcButton.MouseButton1Click:Connect(function()
+	handleSelection("PC")
+end)
+
+spaceConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if input.KeyCode == Enum.KeyCode.Space then
+		handleSelection("PC")
+	end
+end)
