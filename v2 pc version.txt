@@ -1,4 +1,4 @@
--- REMAWED 10 PC EDITION v0.4 (Clean Keyboard Mode - No Desc / No Favs)
+-- REMAWED 10 PC EDITION v0.4.1 (Semi-Transparent Background + Clean Keyboard Mode)
 -- Roblox LocalScript
 
 local Players = game:GetService("Players")
@@ -17,46 +17,61 @@ local WHITE = Color3.fromRGB(255,255,255)
 local entries = {}
 
 local function addSlot(title, code)
-    table.insert(entries, {
-        title = title,
-        code = code
-    })
+	table.insert(entries, {
+		title = title,
+		code = code
+	})
 end
 
 -- POPOLAMENTO SLOT CON LOADSTRING
 addSlot(
-    "Remawed 10 Multi Pannel",
-    'loadstring(game:HttpGet("https://pastebin.com/raw/DidddNBY"))()'
+	"Remawed 10 Multi Pannel",
+	'loadstring(game:HttpGet("https://pastebin.com/raw/DidddNBY"))()'
 )
 
 addSlot(
-    "Knife Script",
-    'loadstring(game:HttpGet("https://pastebin.com/raw/zk803gry"))()'
+	"Knife Script",
+	'loadstring(game:HttpGet("https://pastebin.com/raw/zk803gry"))()'
 )
 
 addSlot(
-    "MM2 Mod",
-    'loadstring(game:HttpGet("https://pastebin.com/raw/0VC7Bkdb"))()'
+	"MM2 Mod",
+	'loadstring(game:HttpGet("https://pastebin.com/raw/0VC7Bkdb"))()'
 )
 
 addSlot(
-    "Remawed 10 Fly GUI",
-    'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/fly%20gui%20fixed.txt"))()'
+	"Remawed 10 Fly GUI",
+	'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/fly%20gui%20fixed.txt"))()'
 )
 
 addSlot(
-    "Remawed10 fling",
-    'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/remawed10%20fling%20beta.txt"))()'
+	"Remawed10 fling",
+	'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/remawed10%20fling%20beta.txt"))()'
 )
 
 addSlot(
-    "Remawed10 slap battles mod",
-    'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/SLAP%20BATTLES%20SCRIPT.txt"))()'
+	"Remawed10 slap battles mod",
+	'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/SLAP%20BATTLES%20SCRIPT.txt"))()'
 )
 
 addSlot(
-    "Remawed10 caos jenga mod",
-    'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/remawed10%20caos%20jenga%20mod.txt"))()'
+	"Remawed10 caos jenga mod",
+	'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/remawed10%20caos%20jenga%20mod.txt"))()'
+)
+
+addSlot(
+	"Remawed10 aimbot ⚠️BETA⚠️",
+	'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/AIMBOT.txt"))()'
+)
+
+addSlot(
+	"Remawed10 ANTI-FLING",
+	'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/anti-fling.txt"))()'
+)
+
+addSlot(
+	"Remawed10 trool",
+	'loadstring(game:HttpGet("https://raw.githubusercontent.com/Remastfe10/REMAWED10/refs/heads/main/troller.txt"))()'
 )
 
 local selected = 1
@@ -77,6 +92,7 @@ local Start = Instance.new("TextButton")
 Start.Size = UDim2.fromOffset(190,55)
 Start.Position = UDim2.new(0.5,-95,0.05,0)
 Start.BackgroundColor3 = BG
+Start.BackgroundTransparency = 0.1 -- Leggermente trasparente anche il bottone iniziale
 Start.Text = "PREMI G"
 Start.TextColor3 = GREEN
 Start.Font = Enum.Font.GothamBlack
@@ -89,12 +105,13 @@ local startStroke = Instance.new("UIStroke",Start)
 startStroke.Color = GREEN
 startStroke.Thickness = 2
 
--- MAIN
+-- MAIN (SEMI-TRASPARENTE)
 
 local Main = Instance.new("Frame")
 Main.Size = UDim2.new(0.8,0,0.78,0)
 Main.Position = UDim2.new(0.1,0,0.04,0)
 Main.BackgroundColor3 = BG
+Main.BackgroundTransparency = 0.15 -- <--- QUI È IMPOSTATA LA SEMI-TRASPARENZA DEL PANNELLO
 Main.Visible = false
 Main.Parent = Gui
 
@@ -109,6 +126,7 @@ mainStroke.Thickness = 1.5
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1,0,0,65)
 Header.BackgroundColor3 = PANEL
+Header.BackgroundTransparency = 0.25 -- Semi-trasparente
 Header.Parent = Main
 
 Instance.new("UICorner",Header).CornerRadius = UDim.new(0,15)
@@ -117,7 +135,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1,-100,1,0)
 Title.Position = UDim2.fromOffset(20,0)
 Title.BackgroundTransparency = 1
-Title.Text = "REMAWED 10  |  PC EDITION v0.2"
+Title.Text = "REMAWED 10  |  PC EDITION v0.3"
 Title.TextColor3 = WHITE
 Title.Font = Enum.Font.GothamBlack
 Title.TextSize = 19
@@ -142,7 +160,8 @@ local Search = Instance.new("TextBox")
 Search.Size = UDim2.new(1,-40,0,44)
 Search.Position = UDim2.fromOffset(20,80)
 Search.BackgroundColor3 = PANEL
-Search.PlaceholderText = "Cerca per titolo..."
+Search.BackgroundTransparency = 0.25 -- Semi-trasparente
+Search.PlaceholderText = "search bar..."
 Search.Text = ""
 Search.TextColor3 = WHITE
 Search.PlaceholderColor3 = Color3.fromRGB(130,130,145)
@@ -183,7 +202,8 @@ local NumberBox = Instance.new("TextLabel")
 NumberBox.Size = UDim2.fromOffset(190,42)
 NumberBox.Position = UDim2.new(1,-210,1,-53)
 NumberBox.BackgroundColor3 = PANEL
-NumberBox.Text = "DIGITA NUMERO..."
+NumberBox.BackgroundTransparency = 0.25
+NumberBox.Text = "ENTER NUMBER..."
 NumberBox.TextColor3 = GREEN
 NumberBox.Font = Enum.Font.GothamBold
 NumberBox.TextSize = 15
@@ -195,227 +215,321 @@ local Status = Instance.new("TextLabel")
 Status.Size = UDim2.new(1,-240,0,42)
 Status.Position = UDim2.new(0,20,1,-53)
 Status.BackgroundTransparency = 1
-Status.Text = "G: Chiudi | INVIO: Esegui | NUMERI: Seleziona"
+Status.Text = "G: Close | ENTER: Execute | NUMBERS: Select"
 Status.TextColor3 = Color3.fromRGB(150,155,170)
 Status.Font = Enum.Font.Gotham
 Status.TextSize = 13
 Status.TextXAlignment = Enum.TextXAlignment.Left
 Status.Parent = Main
 
+-- GESTIONE SOSTITUZIONE / PULIZIA PRECEDENTE ESECUZIONE
+
+local activeCleanup = nil
+
+local function cleanupPreviousExecution()
+	if typeof(activeCleanup) == "function" then
+		pcall(activeCleanup)
+	end
+	activeCleanup = nil
+end
+
 -- FUNZIONE ESECUZIONE SCRIPT
 
 local function executeSelected()
-    if not Main.Visible then return end
-    if not entries[selected] then return end
-    local data = entries[selected]
-    Status.Text = "ESEGUENDO: "..data.title
-    
-    local success, err = pcall(function()
-        loadstring(data.code)()
-    end)
-    
-    if not success then
-        Status.Text = "ERRORE NELL'ESECUZIONE"
-        warn("Remawed10 Error: "..tostring(err))
-    end
+	if not Main.Visible then return end
+	if not entries[selected] then return end
+	local data = entries[selected]
+
+	cleanupPreviousExecution()
+
+	Status.Text = "EXECUTION SUCCESSFUL! IF IT'S OK LIKE THIS, PRESS G TO CLOSE THE PANEL: "..data.title
+
+	local spawnedInstances = {}
+	local connGui
+	local connWs
+
+	connGui = PlayerGui.DescendantAdded:Connect(function(inst)
+		if inst ~= Gui and not inst:IsDescendantOf(Gui) then
+			table.insert(spawnedInstances, inst)
+		end
+	end)
+
+	connWs = workspace.DescendantAdded:Connect(function(inst)
+		table.insert(spawnedInstances, inst)
+	end)
+
+	local returnedValue
+	local success, err = pcall(function()
+		local fn = loadstring(data.code)
+		if fn then
+			returnedValue = fn()
+		end
+	end)
+
+	task.delay(0.5, function()
+		if connGui then connGui:Disconnect() end
+		if connWs then connWs:Disconnect() end
+	end)
+
+	activeCleanup = function()
+		if connGui then connGui:Disconnect() end
+		if connWs then connWs:Disconnect() end
+
+		if typeof(returnedValue) == "table" then
+			if typeof(returnedValue.Destroy) == "function" then
+				pcall(returnedValue.Destroy, returnedValue)
+			elseif typeof(returnedValue.Cleanup) == "function" then
+				pcall(returnedValue.Cleanup, returnedValue)
+			elseif typeof(returnedValue.Stop) == "function" then
+				pcall(returnedValue.Stop, returnedValue)
+			end
+		elseif typeof(returnedValue) == "Instance" then
+			pcall(function() returnedValue:Destroy() end)
+		end
+
+		for _, inst in ipairs(spawnedInstances) do
+			if inst and inst.Parent then
+				pcall(function() inst:Destroy() end)
+			end
+		end
+	end
+
+	if not success then
+		Status.Text = "ERRORE NELL'ESECUZIONE"
+		warn("Remawed10 Error: "..tostring(err))
+	end
 end
 
 -- SCROLL AUTOMATICO
 
 local function scrollToSelected()
-    if not Main.Visible then return end
-    local pos = table.find(visibleEntries, selected)
-    if not pos then return end
-    local target = (pos-1)*68 -- Altezza ridotta della riga (senza descrizione)
-    local maxScroll = math.max(0, Scroll.AbsoluteCanvasSize.Y - Scroll.AbsoluteSize.Y)
-    target = math.clamp(target, 0, maxScroll)
+	if not Main.Visible then return end
+	local pos = table.find(visibleEntries, selected)
+	if not pos then return end
+	local target = (pos-1)*68
+	local maxScroll = math.max(0, Scroll.AbsoluteCanvasSize.Y - Scroll.AbsoluteSize.Y)
+	target = math.clamp(target, 0, maxScroll)
 
-    TweenService:Create(
-        Scroll,
-        TweenInfo.new(0.18, Enum.EasingStyle.Quad),
-        {CanvasPosition = Vector2.new(0, target)}
-    ):Play()
+	TweenService:Create(
+		Scroll,
+		TweenInfo.new(0.18, Enum.EasingStyle.Quad),
+		{CanvasPosition = Vector2.new(0, target)}
+	):Play()
 end
 
 -- AGGIORNAMENTO LISTA
 
 local function refresh()
-    if not Main.Visible then return end
-    for _,v in ipairs(Scroll:GetChildren()) do
-        if v:IsA("Frame") then
-            v:Destroy()
-        end
-    end
+	if not Main.Visible then return end
+	for _,v in ipairs(Scroll:GetChildren()) do
+		if v:IsA("Frame") then
+			v:Destroy()
+		end
+	end
 
-    visibleEntries = {}
-    local query = Search.Text:lower()
+	visibleEntries = {}
+	local query = Search.Text:lower()
 
-    for i,data in ipairs(entries) do
-        local matches = data.title:lower():find(query,1,true)
+	for i,data in ipairs(entries) do
+		local matches = data.title:lower():find(query,1,true)
 
-        if matches then
-            table.insert(visibleEntries, i)
+		if matches then
+			table.insert(visibleEntries, i)
 
-            local Row = Instance.new("Frame")
-            Row.Size = UDim2.new(1,-8,0,58) -- Riga più compatta
-            Row.BackgroundColor3 = (selected == i) and Color3.fromRGB(25,48,43) or PANEL
-            Row.LayoutOrder = #visibleEntries
-            Row.Parent = Scroll
+			local Row = Instance.new("Frame")
+			Row.Size = UDim2.new(1,-8,0,58)
+			Row.BackgroundColor3 = (selected == i) and Color3.fromRGB(25,48,43) or PANEL
+			Row.BackgroundTransparency = 0.25 -- Anche le righe leggermente trasparenti
+			Row.LayoutOrder = #visibleEntries
+			Row.Parent = Scroll
 
-            Instance.new("UICorner",Row).CornerRadius = UDim.new(0,10)
+			Instance.new("UICorner",Row).CornerRadius = UDim.new(0,10)
 
-            local Border = Instance.new("UIStroke",Row)
-            Border.Color = (selected == i) and GREEN or Color3.fromRGB(40,45,55)
-            Border.Thickness = (selected == i) and 1.5 or 1
+			local Border = Instance.new("UIStroke",Row)
+			Border.Color = (selected == i) and GREEN or Color3.fromRGB(40,45,55)
+			Border.Thickness = (selected == i) and 1.5 or 1
 
-            local Num = Instance.new("TextLabel")
-            Num.Size = UDim2.fromOffset(45,48)
-            Num.Position = UDim2.fromOffset(10,5)
-            Num.BackgroundTransparency = 1
-            Num.Text = tostring(i)
-            Num.TextColor3 = GREEN
-            Num.Font = Enum.Font.GothamBlack
-            Num.TextSize = 22
-            Num.Parent = Row
+			local Num = Instance.new("TextLabel")
+			Num.Size = UDim2.fromOffset(45,48)
+			Num.Position = UDim2.fromOffset(10,5)
+			Num.BackgroundTransparency = 1
+			Num.Text = tostring(i)
+			Num.TextColor3 = GREEN
+			Num.Font = Enum.Font.GothamBlack
+			Num.TextSize = 22
+			Num.Parent = Row
 
-            local Name = Instance.new("TextLabel")
-            Name.Size = UDim2.new(1,-70,1,0)
-            Name.Position = UDim2.fromOffset(60,0)
-            Name.BackgroundTransparency = 1
-            Name.Text = data.title
-            Name.TextColor3 = WHITE
-            Name.Font = Enum.Font.GothamBold
-            Name.TextSize = 16
-            Name.TextXAlignment = Enum.TextXAlignment.Left
-            Name.Parent = Row
+			local Name = Instance.new("TextLabel")
+			Name.Size = UDim2.new(1,-70,1,0)
+			Name.Position = UDim2.fromOffset(60,0)
+			Name.BackgroundTransparency = 1
+			Name.Text = data.title
+			Name.TextColor3 = WHITE
+			Name.Font = Enum.Font.GothamBold
+			Name.TextSize = 16
+			Name.TextXAlignment = Enum.TextXAlignment.Left
+			Name.Parent = Row
 
-            local Select = Instance.new("TextButton")
-            Select.Size = UDim2.new(1,0,1,0)
-            Select.BackgroundTransparency = 1
-            Select.Text = ""
-            Select.Parent = Row
+			local Select = Instance.new("TextButton")
+			Select.Size = UDim2.new(1,0,1,0)
+			Select.BackgroundTransparency = 1
+			Select.Text = ""
+			Select.Parent = Row
 
-            Select.MouseButton1Click:Connect(function()
-                if not Main.Visible then return end
-                selected = i
-                Status.Text = "SELEZIONATO: "..data.title
-                refresh()
-                scrollToSelected()
-                executeSelected()
-            end)
-        end
-    end
+			Select.MouseButton1Click:Connect(function()
+				if not Main.Visible then return end
+				selected = i
+				Status.Text = "SELEZIONATO: "..data.title
+				refresh()
+				scrollToSelected()
+				executeSelected()
+			end)
+		end
+	end
 
-    task.defer(scrollToSelected)
+	task.defer(scrollToSelected)
 end
 
--- APERTURA / CHIUSURA
+-- VARIABILI PER ANIMAZIONE
+local isAnimating = false
 
+-- APERTURA / CHIUSURA CON ANIMAZIONE SOLIDA DAL BOTTONE
 local function openPanel()
-    Start.Visible = false
-    Main.Visible = true
-    inputBuffer = ""
-    NumberBox.Text = "DIGITA NUMERO..."
-    refresh()
+	if isAnimating or Main.Visible then return end
+	isAnimating = true
+	Start.Visible = false
+	Main.Visible = true
+
+	Main.Size = UDim2.new(0, 190, 0, 55)
+	Main.Position = UDim2.new(0.5, -95, 0.05, 0)
+
+	local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
+	local openTween = TweenService:Create(Main, tweenInfo, {
+		Size = UDim2.new(0.8, 0, 0.78, 0),
+		Position = UDim2.new(0.1, 0, 0.04, 0)
+	})
+
+	openTween:Play()
+	openTween.Completed:Wait()
+	isAnimating = false
+
+	inputBuffer = ""
+	NumberBox.Text = "ENTER NUMBER..."
+	refresh()
 end
 
 local function closePanel()
-    Main.Visible = false
-    Start.Visible = true
+	if isAnimating or not Main.Visible then return end
+	isAnimating = true
+
+	local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+
+	local closeTween = TweenService:Create(Main, tweenInfo, {
+		Size = UDim2.new(0, 190, 0, 55),
+		Position = UDim2.new(0.5, -95, 0.05, 0)
+	})
+
+	closeTween:Play()
+	closeTween.Completed:Wait()
+
+	Main.Visible = false
+	Start.Visible = true
+	isAnimating = false
 end
 
 Start.MouseButton1Click:Connect(openPanel)
 Close.MouseButton1Click:Connect(closePanel)
 
 Search:GetPropertyChangedSignal("Text"):Connect(function()
-    if not Main.Visible then return end
-    refresh()
+	if not Main.Visible then return end
+	refresh()
 end)
 
 -- MAPPATURA NUMERICA TASTIERA
 local keyToNum = {
-    [Enum.KeyCode.Zero] = "0", [Enum.KeyCode.One] = "1", [Enum.KeyCode.Two] = "2",
-    [Enum.KeyCode.Three] = "3", [Enum.KeyCode.Four] = "4", [Enum.KeyCode.Five] = "5",
-    [Enum.KeyCode.Six] = "6", [Enum.KeyCode.Seven] = "7", [Enum.KeyCode.Eight] = "8",
-    [Enum.KeyCode.Nine] = "9",
-    [Enum.KeyCode.KeypadZero] = "0", [Enum.KeyCode.KeypadOne] = "1", [Enum.KeyCode.KeypadTwo] = "2",
-    [Enum.KeyCode.KeypadThree] = "3", [Enum.KeyCode.KeypadFour] = "4", [Enum.KeyCode.KeypadFive] = "5",
-    [Enum.KeyCode.KeypadSix] = "6", [Enum.KeyCode.KeypadSeven] = "7", [Enum.KeyCode.KeypadEight] = "8",
-    [Enum.KeyCode.KeypadNine] = "9"
+	[Enum.KeyCode.Zero] = "0", [Enum.KeyCode.One] = "1", [Enum.KeyCode.Two] = "2",
+	[Enum.KeyCode.Three] = "3", [Enum.KeyCode.Four] = "4", [Enum.KeyCode.Five] = "5",
+	[Enum.KeyCode.Six] = "6", [Enum.KeyCode.Seven] = "7", [Enum.KeyCode.Eight] = "8",
+	[Enum.KeyCode.Nine] = "9",
+	[Enum.KeyCode.KeypadZero] = "0", [Enum.KeyCode.KeypadOne] = "1", [Enum.KeyCode.KeypadTwo] = "2",
+	[Enum.KeyCode.KeypadThree] = "3", [Enum.KeyCode.KeypadFour] = "4", [Enum.KeyCode.KeypadFive] = "5",
+	[Enum.KeyCode.KeypadSix] = "6", [Enum.KeyCode.KeypadSeven] = "7", [Enum.KeyCode.KeypadEight] = "8",
+	[Enum.KeyCode.KeypadNine] = "9"
 }
 
 -- CONTROLLI DA TASTIERA GLOBALI
 
 UIS.InputBegan:Connect(function(input, processed)
-    if input.KeyCode == Enum.KeyCode.G and not Search:IsFocused() then
-        if Main.Visible then
-            closePanel()
-        else
-            openPanel()
-        end
-        return
-    end
+	if input.KeyCode == Enum.KeyCode.G and not Search:IsFocused() then
+		if Main.Visible then
+			closePanel()
+		else
+			openPanel()
+		end
+		return
+	end
 
-    if not Main.Visible then return end
-    if Search:IsFocused() then return end
+	if not Main.Visible or isAnimating then return end
+	if Search:IsFocused() then return end
 
-    -- GESTIONE NUMERI DIRETTI
-    local digit = keyToNum[input.KeyCode]
-    if digit then
-        local now = tick()
-        if now - lastInputTime > 1.2 then
-            inputBuffer = digit
-        else
-            inputBuffer = inputBuffer .. digit
-        end
-        lastInputTime = now
+	-- GESTIONE NUMERI DIRETTI
+	local digit = keyToNum[input.KeyCode]
+	if digit then
+		local now = tick()
+		if now - lastInputTime > 1.2 then
+			inputBuffer = digit
+		else
+			inputBuffer = inputBuffer .. digit
+		end
+		lastInputTime = now
 
-        local n = tonumber(inputBuffer)
-        NumberBox.Text = "NUMERO: " .. inputBuffer
+		local n = tonumber(inputBuffer)
+		NumberBox.Text = "number: " .. inputBuffer
 
-        if n and entries[n] then
-            local found = table.find(visibleEntries, n)
-            if found then
-                selected = n
-                Status.Text = "SELEZIONATO: " .. entries[n].title
-                refresh()
-                scrollToSelected()
-            else
-                Status.Text = "SLOT NON VISIBILE"
-            end
-        else
-            Status.Text = "SLOT NON ESISTENTE"
-        end
-        return
-    end
+		if n and entries[n] then
+			local found = table.find(visibleEntries, n)
+			if found then
+				selected = n
+				Status.Text = "PRESS ENTER TO CONFIRM THE EXECUTION OF: " .. entries[n].title
+				refresh()
+				scrollToSelected()
+			else
+				Status.Text = "SLOT NOT VISIBLE"
+			end
+		else
+			Status.Text = "NON-EXISTENT SLOT"
+		end
+		return
+	end
 
-    -- ALTRI TASTI DI CONTROLLO
-    if input.KeyCode == Enum.KeyCode.Down then
-        local pos = table.find(visibleEntries, selected)
-        if pos and pos < #visibleEntries then
-            selected = visibleEntries[pos+1]
-        elseif #visibleEntries > 0 then
-            selected = visibleEntries[1]
-        end
-        refresh()
-        scrollToSelected()
+	-- ALTRI TASTI DI CONTROLLO
+	if input.KeyCode == Enum.KeyCode.Down then
+		local pos = table.find(visibleEntries, selected)
+		if pos and pos < #visibleEntries then
+			selected = visibleEntries[pos+1]
+		elseif #visibleEntries > 0 then
+			selected = visibleEntries[1]
+		end
+		refresh()
+		scrollToSelected()
 
-    elseif input.KeyCode == Enum.KeyCode.Up then
-        local pos = table.find(visibleEntries, selected)
-        if pos and pos > 1 then
-            selected = visibleEntries[pos-1]
-        elseif #visibleEntries > 0 then
-            selected = visibleEntries[#visibleEntries]
-        end
-        refresh()
-        scrollToSelected()
+	elseif input.KeyCode == Enum.KeyCode.Up then
+		local pos = table.find(visibleEntries, selected)
+		if pos and pos > 1 then
+			selected = visibleEntries[pos-1]
+		elseif #visibleEntries > 0 then
+			selected = visibleEntries[#visibleEntries]
+		end
+		refresh()
+		scrollToSelected()
 
-    elseif input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.KeypadEnter then
-        executeSelected()
+	elseif input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.KeypadEnter then
+		executeSelected()
 
-    elseif input.KeyCode == Enum.KeyCode.Escape then
-        closePanel()
-    end
+	elseif input.KeyCode == Enum.KeyCode.Escape then
+		closePanel()
+	end
 end)
 
-print("REMAWED 10 PC EDITION v0.4 CLEAN LOADED")
+print("REMAWED 10 PC EDITION v0.4.1 LOADED WITH SEMI-TRANSPARENT BACKGROUND")
