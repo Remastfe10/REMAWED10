@@ -1,0 +1,449 @@
+-- LocalScript: Remawed10 ANTI-FLING (1 Secondo + Fix Atterraggio Sbagliato in Volo + Scale + Notifica stile Xeno)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Rimuove eventuali pannelli duplicati già presenti
+for _, gui in ipairs(playerGui:GetChildren()) do
+	if gui.Name == "Remawed10AntiFlingGui" then
+		gui:Destroy()
+	end
+end
+
+-- ==========================================
+-- IMPOSTAZIONI E STATO
+-- ==========================================
+local antiFlingEnabled = false -- All'inizio OFF
+local fallTime = 0
+local inSuspiciousAir = false
+local isJumping = false
+local jumpLockTimer = 0
+local teleportCooldown = 0
+local FALL_THRESHOLD = 1.0 -- 1 secondo
+
+-- Posizioni sicure
+local safeGroundCFrame = nil
+local previousSafeGroundCFrame = nil
+local lastSaveTime = 0
+
+-- Colori
+local COLOR_GREEN = Color3.fromRGB(46, 204, 113) -- ON (verde)
+local COLOR_RED   = Color3.fromRGB(231, 76, 60)   -- OFF (rosso)
+
+-- ==========================================
+-- INTERFACCIA GRAFICA (GUI)
+-- ==========================================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "Remawed10AntiFlingGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 260, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -130, 0.3, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 8)
+mainCorner.Parent = mainFrame
+
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
+
+local titleCover = Instance.new("Frame")
+titleCover.Size = UDim2.new(1, 0, 0, 10)
+titleCover.Position = UDim2.new(0, 0, 1, -10)
+titleCover.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+titleCover.BorderSizePixel = 0
+titleCover.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -40, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Remawed10 ANTI-FLING BETA"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 14
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleBar
+
+local minBtn = Instance.new("TextButton")
+minBtn.Name = "MinimizeButton"
+minBtn.Size = UDim2.new(0, 30, 0, 30)
+minBtn.Position = UDim2.new(1, -33, 0, 2)
+minBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+minBtn.Text = "-"
+minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minBtn.Font = Enum.Font.GothamBold
+minBtn.TextSize = 18
+minBtn.Parent = titleBar
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 6)
+minCorner.Parent = minBtn
+
+local contentFrame = Instance.new("Frame")
+contentFrame.Name = "Content"
+contentFrame.Size = UDim2.new(1, -20, 1, -45)
+contentFrame.Position = UDim2.new(0, 10, 0, 40)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = mainFrame
+
+local antiFlingBtn = Instance.new("TextButton")
+antiFlingBtn.Name = "AntiFlingBtn"
+antiFlingBtn.Size = UDim2.new(1, 0, 0, 45)
+antiFlingBtn.BackgroundColor3 = COLOR_RED
+antiFlingBtn.Text = "ANTI-FLING: OFF"
+antiFlingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+antiFlingBtn.Font = Enum.Font.GothamSemibold
+antiFlingBtn.TextSize = 13
+antiFlingBtn.Parent = contentFrame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 6)
+btnCorner.Parent = antiFlingBtn
+
+local function updateUI()
+	antiFlingBtn.BackgroundColor3 = antiFlingEnabled and COLOR_GREEN or COLOR_RED
+	antiFlingBtn.Text = antiFlingEnabled and "ANTI-FLING: ON" or "ANTI-FLING: OFF"
+end
+
+antiFlingBtn.MouseButton1Click:Connect(function()
+	antiFlingEnabled = not antiFlingEnabled
+	fallTime = 0
+	inSuspiciousAir = false
+	updateUI()
+end)
+
+local isMinimized = false
+minBtn.MouseButton1Click:Connect(function()
+	isMinimized = not isMinimized
+	contentFrame.Visible = not isMinimized
+	titleCover.Visible = not isMinimized
+	if isMinimized then
+		mainFrame.Size = UDim2.new(0, 260, 0, 35)
+		minBtn.Text = "+"
+	else
+		mainFrame.Size = UDim2.new(0, 260, 0, 100)
+		minBtn.Text = "-"
+	end
+end)
+
+updateUI()
+
+-- ==========================================
+-- CONTROLLO SALTO
+-- ==========================================
+local function registerJump()
+	isJumping = true
+	jumpLockTimer = 0.75
+end
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then
+		return
+	end
+	if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.ButtonA then
+		registerJump()
+	end
+end)
+
+-- ==========================================
+-- NOTIFICA STILE XENO (BASSO A DESTRA)
+-- ==========================================
+local function showXenoNotification(titleText, bodyText)
+	local oldNotif = screenGui:FindFirstChild("XenoStyleNotif")
+	if oldNotif then
+		oldNotif:Destroy()
+	end
+
+	local notif = Instance.new("Frame")
+	notif.Name = "XenoStyleNotif"
+	notif.Size = UDim2.new(0, 290, 0, 66)
+	notif.Position = UDim2.new(1, 20, 1, -85)
+	notif.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+	notif.BorderSizePixel = 0
+	notif.Parent = screenGui
+
+	local notifCorner = Instance.new("UICorner")
+	notifCorner.CornerRadius = UDim.new(0, 8)
+	notifCorner.Parent = notif
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(45, 45, 55)
+	stroke.Thickness = 1
+	stroke.Parent = notif
+
+	local accentBar = Instance.new("Frame")
+	accentBar.Size = UDim2.new(0, 4, 1, -14)
+	accentBar.Position = UDim2.new(0, 8, 0, 7)
+	accentBar.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+	accentBar.BorderSizePixel = 0
+	accentBar.Parent = notif
+
+	local accentCorner = Instance.new("UICorner")
+	accentCorner.CornerRadius = UDim.new(0, 3)
+	accentCorner.Parent = accentBar
+
+	local nTitle = Instance.new("TextLabel")
+	nTitle.Size = UDim2.new(1, -28, 0, 22)
+	nTitle.Position = UDim2.new(0, 20, 0, 8)
+	nTitle.BackgroundTransparency = 1
+	nTitle.Text = titleText
+	nTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	nTitle.Font = Enum.Font.GothamBold
+	nTitle.TextSize = 13
+	nTitle.TextXAlignment = Enum.TextXAlignment.Left
+	nTitle.Parent = notif
+
+	local nDesc = Instance.new("TextLabel")
+	nDesc.Size = UDim2.new(1, -28, 0, 28)
+	nDesc.Position = UDim2.new(0, 20, 0, 30)
+	nDesc.BackgroundTransparency = 1
+	nDesc.Text = bodyText
+	nDesc.TextColor3 = Color3.fromRGB(185, 190, 200)
+	nDesc.Font = Enum.Font.Gotham
+	nDesc.TextSize = 12
+	nDesc.TextXAlignment = Enum.TextXAlignment.Left
+	nDesc.TextWrapped = true
+	nDesc.Parent = notif
+
+	local progressBar = Instance.new("Frame")
+	progressBar.Size = UDim2.new(1, -16, 0, 2)
+	progressBar.Position = UDim2.new(0, 8, 1, -4)
+	progressBar.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+	progressBar.BorderSizePixel = 0
+	progressBar.Parent = notif
+
+	TweenService:Create(
+		notif,
+		TweenInfo.new(0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+		{ Position = UDim2.new(1, -305, 1, -85) }
+	):Play()
+
+	TweenService:Create(
+		progressBar,
+		TweenInfo.new(3.0, Enum.EasingStyle.Linear),
+		{ Size = UDim2.new(0, 0, 0, 2) }
+	):Play()
+
+	task.delay(3.0, function()
+		if notif and notif.Parent then
+			local slideOut = TweenService:Create(
+				notif,
+				TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In),
+				{ Position = UDim2.new(1, 20, 1, -85) }
+			)
+			slideOut:Play()
+			slideOut.Completed:Wait()
+			if notif then
+				notif:Destroy()
+			end
+		end
+	end)
+end
+
+-- ==========================================
+-- RILEVAMENTO SCALE E GRADINI
+-- ==========================================
+local function isStairInstance(inst)
+	if not inst then
+		return false
+	end
+	if inst:IsA("Seat") or inst:IsA("VehicleSeat") or inst:IsA("TrussPart") or inst:IsA("WedgePart") or inst:IsA("CornerWedgePart") then
+		return true
+	end
+	local lowerName = string.lower(inst.Name)
+	if string.find(lowerName, "stair")
+		or string.find(lowerName, "step")
+		or string.find(lowerName, "ramp")
+		or string.find(lowerName, "ladder")
+		or string.find(lowerName, "scala")
+		or string.find(lowerName, "gradin") then
+		return true
+	end
+	return false
+end
+
+local function isUsingStairs(character, humanoid, rootPart)
+	if humanoid:GetState() == Enum.HumanoidStateType.Climbing then
+		return true
+	end
+
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	rayParams.FilterDescendantsInstances = { character }
+
+	local origin = rootPart.Position
+	local look = rootPart.CFrame.LookVector
+
+	local directDown = workspace:Raycast(origin, Vector3.new(0, -4.2, 0), rayParams)
+	if directDown and directDown.Instance then
+		if isStairInstance(directDown.Instance) or directDown.Distance <= 3.6 then
+			return true
+		end
+	end
+
+	local hit1 = workspace:Raycast(origin + look * 1.0, Vector3.new(0, -5.0, 0), rayParams)
+	local hit2 = workspace:Raycast(origin + look * 2.2, Vector3.new(0, -5.5, 0), rayParams)
+	if hit1 and hit2 then
+		local heightDiff = math.abs(hit1.Position.Y - hit2.Position.Y)
+		if heightDiff >= 0.15 and heightDiff <= 2.2 then
+			return true
+		end
+	end
+
+	local backHit = workspace:Raycast(origin - look * 1.2, Vector3.new(0, -4.5, 0), rayParams)
+	if backHit and backHit.Distance <= 3.8 then
+		return true
+	end
+
+	return false
+end
+
+-- ==========================================
+-- LOGICA ANTI-FLING (TELEPORT PER ULTIMO)
+-- ==========================================
+local function teleportToSafeGround(rootPart, humanoid)
+	rootPart.AssemblyLinearVelocity = Vector3.zero
+	rootPart.AssemblyAngularVelocity = Vector3.zero
+	humanoid:ChangeState(Enum.HumanoidStateType.Running)
+
+	fallTime = 0
+	inSuspiciousAir = false
+	isJumping = false
+	jumpLockTimer = 0
+	teleportCooldown = 0.1
+
+	local targetCFrame = previousSafeGroundCFrame or safeGroundCFrame
+	if targetCFrame then
+		rootPart.CFrame = targetCFrame + Vector3.new(0, 0.3, 0)
+	end
+
+	showXenoNotification(
+		"Remawed10 ANTI-FLING",
+		"Anti-Fling triggered! Returned to last safe position."
+	)
+end
+
+local currentConn = nil
+
+local function setupCharacter(character)
+	if currentConn then
+		currentConn:Disconnect()
+		currentConn = nil
+	end
+
+	local humanoid = character:WaitForChild("Humanoid")
+	local rootPart = character:WaitForChild("HumanoidRootPart")
+
+	safeGroundCFrame = rootPart.CFrame
+	previousSafeGroundCFrame = rootPart.CFrame
+	lastSaveTime = os.clock()
+	fallTime = 0
+	inSuspiciousAir = false
+	isJumping = false
+	jumpLockTimer = 0
+	teleportCooldown = 0
+
+	humanoid.Jumping:Connect(function(active)
+		if active then
+			registerJump()
+		end
+	end)
+
+	currentConn = RunService.Heartbeat:Connect(function(dt)
+		if not character or not character.Parent or humanoid.Health <= 0 then
+			if currentConn then
+				currentConn:Disconnect()
+				currentConn = nil
+			end
+			return
+		end
+
+		if teleportCooldown > 0 then
+			teleportCooldown = math.max(0, teleportCooldown - dt)
+			return
+		end
+
+		if jumpLockTimer > 0 then
+			jumpLockTimer = math.max(0, jumpLockTimer - dt)
+			if jumpLockTimer <= 0 then
+				isJumping = false
+			end
+		end
+
+		local vel = rootPart.AssemblyLinearVelocity
+		local speed = vel.Magnitude
+		local horizontalSpeed = Vector3.new(vel.X, 0, vel.Z).Magnitude
+		local usingStairs = isUsingStairs(character, humanoid, rootPart)
+		local onGround = (humanoid.FloorMaterial ~= Enum.Material.Air) or usingStairs
+
+		if onGround then
+			-- Se stava volando in modo sospetto e tocca terra con spinta/velocità anomala, lo riporta indietro
+			if antiFlingEnabled and not isJumping and inSuspiciousAir and (speed >= 32 or vel.Y < -18) then
+				teleportToSafeGround(rootPart, humanoid)
+				return
+			end
+
+			fallTime = 0
+			inSuspiciousAir = false
+			if jumpLockTimer <= 0 then
+				isJumping = false
+			end
+
+			local now = os.clock()
+			if speed < 35 and (now - lastSaveTime) >= 0.25 then
+				previousSafeGroundCFrame = safeGroundCFrame
+				safeGroundCFrame = rootPart.CFrame
+				lastSaveTime = now
+			end
+			return
+		end
+
+		if not antiFlingEnabled or isJumping then
+			fallTime = 0
+			inSuspiciousAir = false
+			return
+		end
+
+		-- Non scatta quando sali normalmente (vel.Y > 1 e niente fling orizzontale)
+		if vel.Y > 1 and horizontalSpeed < 45 then
+			fallTime = 0
+			return
+		end
+
+		if vel.Y < -2 or horizontalSpeed >= 45 then
+			inSuspiciousAir = true
+			fallTime = fallTime + dt
+			if fallTime >= FALL_THRESHOLD then
+				teleportToSafeGround(rootPart, humanoid)
+			end
+		else
+			fallTime = 0
+		end
+	end)
+end
+
+if player.Character then
+	setupCharacter(player.Character)
+end
+player.CharacterAdded:Connect(setupCharacter)

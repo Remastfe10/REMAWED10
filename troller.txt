@@ -1,0 +1,1253 @@
+-- Servizi necessari
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TextChatService = game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Rimuovi la GUI se esiste già per evitare duplicati
+local existingGui = playerGui:FindFirstChild("Remawed10TroolGui") or CoreGui:FindFirstChild("Remawed10TroolGui")
+if existingGui then
+	existingGui:Destroy()
+end
+
+-- Creazione della ScreenGui principale
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "Remawed10TroolGui"
+screenGui.ResetOnSpawn = false
+local success = pcall(function()
+	screenGui.Parent = CoreGui
+end)
+if not success then
+	screenGui.Parent = playerGui
+end
+
+-- Finestra Principale (Main Frame) - Tema Nero e Bianco
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 520, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -260, 0.5, -250)
+mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+mainFrame.BackgroundTransparency = 0.05
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 14)
+mainCorner.Parent = mainFrame
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(240, 240, 240)
+mainStroke.Transparency = 0.3
+mainStroke.Thickness = 1.5
+mainStroke.Parent = mainFrame
+
+local mainGradient = Instance.new("UIGradient")
+mainGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 25)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))
+})
+mainGradient.Rotation = 45
+mainGradient.Parent = mainFrame
+
+-- Barra Superiore (TopBar per il trascinamento)
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.Size = UDim2.new(1, 0, 0, 48)
+topBar.BackgroundTransparency = 1
+topBar.BorderSizePixel = 0
+topBar.Parent = mainFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -70, 1, 0)
+titleLabel.Position = UDim2.new(0, 20, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.Text = "⚡ Remawed10 Trool"
+titleLabel.RichText = true
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 16
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = topBar
+
+-- Pulsante Minimizza (-)
+local isMinimized = false
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 32, 0, 32)
+minimizeBtn.Position = UDim2.new(1, -42, 0.5, -16)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+minimizeBtn.BorderSizePixel = 0
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.TextSize = 18
+minimizeBtn.Parent = topBar
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 8)
+minCorner.Parent = minimizeBtn
+
+-- Contenitore del corpo
+local bodyContainer = Instance.new("Frame")
+bodyContainer.Size = UDim2.new(1, 0, 1, -48)
+bodyContainer.Position = UDim2.new(0, 0, 0, 48)
+bodyContainer.BackgroundTransparency = 1
+bodyContainer.Parent = mainFrame
+
+local divider = Instance.new("Frame")
+divider.Size = UDim2.new(1, -30, 0, 1)
+divider.Position = UDim2.new(0, 15, 0, 0)
+divider.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+divider.BackgroundTransparency = 0.5
+divider.BorderSizePixel = 0
+divider.Parent = bodyContainer
+
+-- Logica Minimizzazione
+minimizeBtn.MouseButton1Click:Connect(function()
+	isMinimized = not isMinimized
+	if isMinimized then
+		minimizeBtn.Text = "+"
+		TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 520, 0, 48)}):Play()
+		bodyContainer.Visible = false
+	else
+		minimizeBtn.Text = "-"
+		bodyContainer.Visible = true
+		TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {Size = UDim2.new(0, 520, 0, 500)}):Play()
+	end
+end)
+
+-- Barra di navigazione superiore (Tab di categoria)
+local topTabHolder = Instance.new("Frame")
+topTabHolder.Size = UDim2.new(1, -30, 0, 36)
+topTabHolder.Position = UDim2.new(0, 15, 0, 10)
+topTabHolder.BackgroundTransparency = 1
+topTabHolder.Parent = bodyContainer
+
+local topTabLayout = Instance.new("UIListLayout")
+topTabLayout.FillDirection = Enum.FillDirection.Horizontal
+topTabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+topTabLayout.Padding = UDim.new(0, 10)
+topTabLayout.Parent = topTabHolder
+
+-- Container dei Contenuti Principali
+local contentContainer = Instance.new("Frame")
+contentContainer.Size = UDim2.new(1, -30, 1, -60)
+contentContainer.Position = UDim2.new(0, 15, 0, 52)
+contentContainer.BackgroundTransparency = 1
+contentContainer.Parent = bodyContainer
+
+local function animateTabButton(btn, isSelected)
+	local targetColor = isSelected and Color3.fromRGB(240, 240, 240) or Color3.fromRGB(30, 30, 30)
+	local targetTextColor = isSelected and Color3.fromRGB(15, 15, 15) or Color3.fromRGB(200, 200, 200)
+	
+	TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		BackgroundColor3 = targetColor,
+		TextColor3 = targetTextColor
+	}):Play()
+end
+
+local function createTopTabButton(name, order)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0.5, -5, 1, 0)
+	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	btn.BorderSizePixel = 0
+	btn.Font = Enum.Font.GothamMedium
+	btn.Text = name
+	btn.TextColor3 = Color3.fromRGB(200, 200, 200)
+	btn.TextSize = 13
+	btn.LayoutOrder = order
+	btn.Parent = topTabHolder
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = btn
+	
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(80, 80, 80)
+	stroke.Transparency = 0.5
+	stroke.Parent = btn
+
+	return btn
+end
+
+local function createSectionFrame()
+	local frame = Instance.new("ScrollingFrame")
+	frame.Size = UDim2.new(1, 0, 1, 0)
+	frame.BackgroundTransparency = 1
+	frame.BorderSizePixel = 0
+	frame.Visible = false
+	frame.ScrollBarThickness = 3
+	frame.ScrollBarImageColor3 = Color3.fromRGB(240, 240, 240)
+	frame.CanvasSize = UDim2.new(0, 0, 0, 0)
+	frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	frame.Parent = contentContainer
+	
+	local list = Instance.new("UIListLayout")
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.Padding = UDim.new(0, 8)
+	list.Parent = frame
+	
+	local pad = Instance.new("UIPadding")
+	pad.PaddingRight = UDim.new(0, 5)
+	pad.Parent = frame
+	
+	return frame
+end
+
+local troolTabBtn = createTopTabButton("🎯 TROOL PLAYERS", 1)
+local avatarTabBtn = createTopTabButton("🔥 Avatar Troller", 2)
+
+local troolSection = createSectionFrame()
+local avatarSection = createSectionFrame()
+
+troolSection.Visible = true
+animateTabButton(troolTabBtn, true)
+
+local function switchMainTab(selectedBtn, selectedSection)
+	troolSection.Visible = false
+	avatarSection.Visible = false
+	
+	animateTabButton(troolTabBtn, false)
+	animateTabButton(avatarTabBtn, false)
+	
+	selectedSection.Visible = true
+	animateTabButton(selectedBtn, true)
+end
+
+troolTabBtn.MouseButton1Click:Connect(function()
+	switchMainTab(troolTabBtn, troolSection)
+end)
+
+avatarTabBtn.MouseButton1Click:Connect(function()
+	switchMainTab(avatarTabBtn, avatarSection)
+end)
+
+----------------------------------------------------------------
+-- SEZIONE 1: TROOL PLAYERS
+----------------------------------------------------------------
+local selectedTarget = nil
+
+local listHeader = Instance.new("TextLabel")
+listHeader.Size = UDim2.new(1, 0, 0, 20)
+listHeader.BackgroundTransparency = 1
+listHeader.Font = Enum.Font.GothamBold
+listHeader.Text = "GIOCATORI ONLINE"
+listHeader.TextColor3 = Color3.fromRGB(180, 180, 180)
+listHeader.TextSize = 11
+listHeader.TextXAlignment = Enum.TextXAlignment.Left
+listHeader.Parent = troolSection
+
+local playerListContainer = Instance.new("ScrollingFrame")
+playerListContainer.Size = UDim2.new(1, 0, 0, 90)
+playerListContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+playerListContainer.BorderSizePixel = 0
+playerListContainer.ScrollBarThickness = 3
+playerListContainer.ScrollBarImageColor3 = Color3.fromRGB(240, 240, 240)
+playerListContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+playerListContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
+playerListContainer.Parent = troolSection
+
+local playerListCorner = Instance.new("UICorner")
+playerListCorner.CornerRadius = UDim.new(0, 10)
+playerListCorner.Parent = playerListContainer
+
+local playerListStroke = Instance.new("UIStroke")
+playerListStroke.Color = Color3.fromRGB(70, 70, 70)
+playerListStroke.Transparency = 0.5
+playerListStroke.Parent = playerListContainer
+
+local playerListUI = Instance.new("UIListLayout")
+playerListUI.SortOrder = Enum.SortOrder.LayoutOrder
+playerListUI.Padding = UDim.new(0, 4)
+playerListUI.Parent = playerListContainer
+
+-- Give Select Tool
+local giveToolBtn = Instance.new("TextButton")
+giveToolBtn.Size = UDim2.new(1, 0, 0, 32)
+giveToolBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+giveToolBtn.BorderSizePixel = 0
+giveToolBtn.Font = Enum.Font.GothamBold
+giveToolBtn.Text = "🛠️ Give Select Tool (Prendi Tool per selezionare)"
+giveToolBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
+giveToolBtn.TextSize = 12
+giveToolBtn.Parent = troolSection
+
+local giveToolCorner = Instance.new("UICorner")
+giveToolCorner.CornerRadius = UDim.new(0, 8)
+giveToolCorner.Parent = giveToolBtn
+
+local giveToolStroke = Instance.new("UIStroke")
+giveToolStroke.Color = Color3.fromRGB(120, 120, 120)
+giveToolStroke.Transparency = 0.5
+giveToolStroke.Parent = giveToolBtn
+
+giveToolBtn.MouseButton1Click:Connect(function()
+	local backpack = player:FindFirstChildOfClass("Backpack") or player:WaitForChild("Backpack")
+	local character = player.Character
+	
+	if not backpack:FindFirstChild("SelectPlayerTool") and not (character and character:FindFirstChild("SelectPlayerTool")) then
+		local tool = Instance.new("Tool")
+		tool.Name = "SelectPlayerTool"
+		tool.RequiresHandle = false
+		tool.ToolTip = "Clicca su un player per selezionarlo!"
+		
+		tool.Activated:Connect(function()
+			local mouse = player:GetMouse()
+			local target = mouse.Target
+			if target and target.Parent then
+				local charModel = target.Parent
+				local foundPlayer = Players:GetPlayerFromCharacter(charModel)
+				if not foundPlayer then
+					charModel = charModel.Parent
+					foundPlayer = Players:GetPlayerFromCharacter(charModel)
+				end
+				
+				if foundPlayer and foundPlayer ~= player then
+					selectedTarget = foundPlayer
+					giveToolBtn.Text = "✅ Target Selezionato: " .. foundPlayer.Name
+					task.wait(1.5)
+					giveToolBtn.Text = "🛠️ Give Select Tool (Prendi Tool per selezionare)"
+				end
+			end
+		end)
+		
+		tool.Parent = backpack
+		giveToolBtn.Text = "✨ Tool aggiunto nel tuo inventario!"
+		task.wait(1.5)
+		giveToolBtn.Text = "🛠️ Give Select Tool (Prendi Tool per selezionare)"
+	else
+		giveToolBtn.Text = "⚠️ Hai già il tool nell'inventario!"
+		task.wait(1.5)
+		giveToolBtn.Text = "🛠️ Give Select Tool (Prendi Tool per selezionare)"
+	end
+end)
+
+local isViewing = false
+local sitHeadConnection = nil
+local followConnection = nil
+local backAttachConnection = nil
+local kickHeadConnection = nil
+local flingActive = false
+
+local function createTroolAction(text, callback)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, 32)
+	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	btn.BorderSizePixel = 0
+	btn.Font = Enum.Font.GothamMedium
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(240, 240, 240)
+	btn.TextSize = 13
+	btn.Parent = troolSection
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = btn
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(80, 80, 80)
+	stroke.Transparency = 0.6
+	stroke.Parent = btn
+
+	btn.MouseEnter:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
+	end)
+
+	btn.MouseLeave:Connect(function()
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}):Play()
+	end)
+
+	btn.MouseButton1Click:Connect(function()
+		if selectedTarget and selectedTarget.Parent then
+			callback(btn)
+		else
+			local oldText = btn.Text
+			btn.Text = "⚠️ Seleziona prima un player!"
+			TweenService:Create(btn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(255, 100, 100)}):Play()
+			task.wait(1.5)
+			TweenService:Create(btn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+			btn.Text = oldText
+		end
+	end)
+end
+
+createTroolAction("👁️ View Player (ON / OFF)", function(btn)
+	if not isViewing then
+		if selectedTarget and selectedTarget.Character and selectedTarget.Character:FindFirstChild("Humanoid") then
+			workspace.CurrentCamera.CameraSubject = selectedTarget.Character.Humanoid
+			isViewing = true
+			btn.Text = "👁️ View Player [ON]"
+			TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240), TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
+		end
+	else
+		if player.Character and player.Character:FindFirstChild("Humanoid") then
+			workspace.CurrentCamera.CameraSubject = player.Character.Humanoid
+		end
+		isViewing = false
+		btn.Text = "👁️ View Player (ON / OFF)"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 30), TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+	end
+end)
+
+createTroolAction("📍 Teleport to Player", function()
+	local char = player.Character
+	local targetChar = selectedTarget.Character
+	if char and targetChar then
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+		if hrp and targetHRP then
+			hrp.CFrame = targetHRP.CFrame + Vector3.new(0, 3, 3)
+		end
+	end
+end)
+
+createTroolAction("🌪️ Fling Player (ON / OFF)", function(btn)
+	flingActive = not flingActive
+	if flingActive then
+		btn.Text = "🌪️ Fling Player [ON]"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240), TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
+		
+		task.spawn(function()
+			while flingActive and selectedTarget and selectedTarget.Character do
+				local myChar = player.Character
+				local targetChar = selectedTarget.Character
+				if myChar and targetChar then
+					local myHRP = myChar:FindFirstChild("HumanoidRootPart")
+					local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+					local myHum = myChar:FindFirstChildOfClass("Humanoid")
+					
+					if myHRP and targetHRP and myHum then
+						myHRP.CFrame = targetHRP.CFrame
+						myHRP.AssemblyLinearVelocity = Vector3.new(35000, 35000, 35000)
+						myHRP.AssemblyAngularVelocity = Vector3.new(50000, 50000, 50000)
+					end
+				end
+				RunService.Heartbeat:Wait()
+			end
+		end)
+	else
+		flingActive = false
+		btn.Text = "🌪️ Fling Player (ON / OFF)"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 30), TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+		local myHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if myHRP then
+			myHRP.AssemblyLinearVelocity = Vector3.zero
+			myHRP.AssemblyAngularVelocity = Vector3.zero
+		end
+	end
+end)
+
+createTroolAction("🦶 Kick Head (ON / OFF)", function(btn)
+	if not kickHeadConnection then
+		kickHeadConnection = RunService.RenderStepped:Connect(function()
+			if selectedTarget and selectedTarget.Character then
+				local targetHead = selectedTarget.Character:FindFirstChild("Head")
+				local myHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if targetHead and myHRP then
+					local bounce = math.abs(math.sin(tick() * 10)) * 1.5
+					myHRP.CFrame = targetHead.CFrame + Vector3.new(0, 2.2 + bounce, 0)
+					myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+				end
+			end
+		end)
+		btn.Text = "🦶 Kick Head [ON]"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240), TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
+	else
+		if kickHeadConnection then kickHeadConnection:Disconnect() kickHeadConnection = nil end
+		btn.Text = "🦶 Kick Head (ON / OFF)"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 30), TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+	end
+end)
+
+createTroolAction("🎒 Back Attach (ON / OFF)", function(btn)
+	if not backAttachConnection then
+		backAttachConnection = RunService.RenderStepped:Connect(function()
+			if selectedTarget and selectedTarget.Character then
+				local targetHRP = selectedTarget.Character:FindFirstChild("HumanoidRootPart")
+				local myHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if targetHRP and myHRP then
+					myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1.8)
+					myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+				end
+			end
+		end)
+		btn.Text = "🎒 Back Attach [ON]"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240), TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
+	else
+		if backAttachConnection then backAttachConnection:Disconnect() backAttachConnection = nil end
+		btn.Text = "🎒 Back Attach (ON / OFF)"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 30), TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+	end
+end)
+
+createTroolAction("🧢 Sit Head Stabile (ON / OFF)", function(btn)
+	if not sitHeadConnection then
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then humanoid.Sit = true end
+		
+		sitHeadConnection = RunService.RenderStepped:Connect(function()
+			if selectedTarget and selectedTarget.Character then
+				local targetHead = selectedTarget.Character:FindFirstChild("Head")
+				local myHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if targetHead and myHRP then
+					myHRP.CFrame = targetHead.CFrame + Vector3.new(0, 2.0, 0)
+					myHRP.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+				end
+			end
+		end)
+		btn.Text = "🧢 Sit Head Stabile [ON]"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240), TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
+	else
+		if sitHeadConnection then sitHeadConnection:Disconnect() sitHeadConnection = nil end
+		btn.Text = "🧢 Sit Head Stabile (ON / OFF)"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 30), TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+	end
+end)
+
+createTroolAction("🏃 Follow Player (ON / OFF)", function(btn)
+	if not followConnection then
+		followConnection = RunService.RenderStepped:Connect(function()
+			if selectedTarget and selectedTarget.Character then
+				local char = player.Character
+				local targetChar = selectedTarget.Character
+				if char and targetChar then
+					local humanoid = char:FindFirstChildOfClass("Humanoid")
+					local hrp = char:FindFirstChild("HumanoidRootPart")
+					local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
+					
+					if humanoid and hrp and targetHRP then
+						local distance = (hrp.Position - targetHRP.Position).Magnitude
+						if distance > 35 then
+							hrp.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
+						else
+							humanoid:MoveTo(targetHRP.Position)
+						end
+					end
+				end
+			end
+		end)
+		btn.Text = "🏃 Follow Player [ON]"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240), TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
+	else
+		if followConnection then followConnection:Disconnect() followConnection = nil end
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then humanoid:MoveTo(player.Character.HumanoidRootPart.Position) end
+		btn.Text = "🏃 Follow Player (ON / OFF)"
+		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 30), TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+	end
+end)
+
+local function refreshPlayerList()
+	-- Conserva la posizione dello scroll durante l'aggiornamento della lista.
+	local savedCanvasPosition = playerListContainer.CanvasPosition
+
+	if selectedTarget and not selectedTarget.Parent then
+		selectedTarget = nil
+		if isViewing and player.Character and player.Character:FindFirstChild("Humanoid") then
+			workspace.CurrentCamera.CameraSubject = player.Character.Humanoid
+			isViewing = false
+		end
+		if followConnection then followConnection:Disconnect() followConnection = nil end
+		if backAttachConnection then backAttachConnection:Disconnect() backAttachConnection = nil end
+		if kickHeadConnection then kickHeadConnection:Disconnect() kickHeadConnection = nil end
+		flingActive = false
+	end
+
+	for _, child in ipairs(playerListContainer:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= player then
+			local pBtn = Instance.new("TextButton")
+			pBtn.Size = UDim2.new(1, 0, 0, 54)
+			if selectedTarget == p then
+				pBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+			else
+				pBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+			end
+			pBtn.BorderSizePixel = 0
+			pBtn.Text = ""
+			pBtn.Parent = playerListContainer
+
+			local pCorner = Instance.new("UICorner")
+			pCorner.CornerRadius = UDim.new(0, 8)
+			pCorner.Parent = pBtn
+
+			local avatarImg = Instance.new("ImageLabel")
+			avatarImg.Size = UDim2.new(0, 44, 0, 44)
+			avatarImg.Position = UDim2.new(0, 5, 0.5, -22)
+			avatarImg.BackgroundTransparency = 1
+			avatarImg.ScaleType = Enum.ScaleType.Fit
+
+			pcall(function()
+				local image, isReady = Players:GetUserThumbnailAsync(
+					p.UserId,
+					Enum.ThumbnailType.AvatarThumbnail,
+					Enum.ThumbnailSize.Size420x420
+				)
+				avatarImg.Image = image
+			end)
+			avatarImg.Parent = pBtn
+
+			local imgCorner = Instance.new("UICorner")
+			imgCorner.CornerRadius = UDim.new(0, 6)
+			imgCorner.Parent = avatarImg
+
+			local nameLabel = Instance.new("TextLabel")
+			nameLabel.Size = UDim2.new(1, -60, 1, 0)
+			nameLabel.Position = UDim2.new(0, 56, 0, 0)
+			nameLabel.BackgroundTransparency = 1
+			nameLabel.Font = Enum.Font.GothamMedium
+			nameLabel.Text = p.Name
+			if selectedTarget == p then
+				nameLabel.TextColor3 = Color3.fromRGB(15, 15, 15)
+			else
+				nameLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+			end
+			nameLabel.TextSize = 13
+			nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+			nameLabel.Parent = pBtn
+
+			pBtn.MouseButton1Click:Connect(function()
+				selectedTarget = p
+				for _, b in ipairs(playerListContainer:GetChildren()) do
+					if b:IsA("TextButton") then
+						TweenService:Create(b, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(25, 25, 25)}):Play()
+						local lbl = b:FindFirstChildOfClass("TextLabel")
+						if lbl then TweenService:Create(lbl, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(220, 220, 220)}):Play() end
+					end
+				end
+				TweenService:Create(pBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240)}):Play()
+				TweenService:Create(nameLabel, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
+			end)
+		end
+	end
+
+	-- Aspetta che UIListLayout/AutomaticCanvasSize ricalcolino l'altezza,
+	-- poi ripristina la posizione precedente invece di tornare in cima.
+	task.defer(function()
+		RunService.Heartbeat:Wait()
+		playerListContainer.CanvasPosition = savedCanvasPosition
+	end)
+end
+
+task.spawn(function()
+	while true do
+		refreshPlayerList()
+		task.wait(1)
+	end
+end)
+
+
+----------------------------------------------------------------
+-- SEZIONE 2: AVATAR TROLLER
+----------------------------------------------------------------
+local function createAvatarButton(text, order)
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 0, 44)
+	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(240, 240, 240)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 14
+	btn.LayoutOrder = order
+	btn.Parent = avatarSection
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = btn
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(80, 80, 80)
+	stroke.Transparency = 0.5
+	stroke.Parent = btn
+
+	return btn
+end
+
+local avatarListLayout = Instance.new("UIListLayout")
+avatarListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+avatarListLayout.Padding = UDim.new(0, 8)
+avatarListLayout.Parent = avatarSection
+
+local spasmButton = createAvatarButton("Spasm: OFF", 1)
+local slamButton = createAvatarButton("Slam Chaos: OFF", 2)
+local snakeButton = createAvatarButton("Snake: OFF", 3)
+local fartButton = createAvatarButton("Fart: OFF", 4)
+local bugButton = createAvatarButton("Bug: OFF", 5)
+
+local function sendChatMessage(message)
+	local sent = false
+	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+		local textChannels = TextChatService:FindFirstChild("TextChannels")
+		local generalChannel = textChannels and textChannels:FindFirstChild("RBXGeneral")
+		if generalChannel then
+			pcall(function()
+				generalChannel:SendAsync(message)
+				sent = true
+			end)
+		end
+	end
+
+	if not sent then
+		local defaultChat = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+		local sayMessage = defaultChat and defaultChat:FindFirstChild("SayMessageRequest")
+		if sayMessage then
+			pcall(function()
+				sayMessage:FireServer(message, "All")
+			end)
+		end
+	end
+end
+
+local spasmActive = false
+local spasmConnection = nil
+
+local function toggleSpasm()
+	spasmActive = not spasmActive
+
+	if spasmActive then
+		spasmButton.Text = "Spasm: ON"
+		spasmButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+		spasmButton.TextColor3 = Color3.fromRGB(15, 15, 15)
+
+		spasmConnection = RunService.Heartbeat:Connect(function()
+			local character = player.Character
+			if not character then return end
+
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+			if humanoid and rootPart then
+				humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+				humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+				humanoid.Jump = true
+
+				rootPart.AssemblyAngularVelocity = Vector3.new(
+					math.random(-45, 45),
+					math.random(-45, 45),
+					math.random(-45, 45)
+				)
+				rootPart.AssemblyLinearVelocity = Vector3.new(
+					math.random(-25, 25),
+					math.random(15, 45),
+					math.random(-25, 25)
+				)
+			end
+		end)
+	else
+		spasmButton.Text = "Spasm: OFF"
+		spasmButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+		spasmButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+
+		if spasmConnection then
+			spasmConnection:Disconnect()
+			spasmConnection = nil
+		end
+
+		local character = player.Character
+		if character then
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			local rootPart = character:FindFirstChild("HumanoidRootPart")
+			if humanoid then
+				humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+			end
+			if rootPart then
+				rootPart.AssemblyAngularVelocity = Vector3.zero
+				rootPart.AssemblyLinearVelocity = Vector3.zero
+			end
+		end
+	end
+end
+
+local slamActive = false
+local slamConnection = nil
+local slamThread = nil
+local originalWalkSpeed = 16
+local originalJumpPower = 50
+
+local function cleanupSlam(character)
+	if slamConnection then
+		slamConnection:Disconnect()
+		slamConnection = nil
+	end
+	if slamThread then
+		task.cancel(slamThread)
+		slamThread = nil
+	end
+
+	if character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+		if rootPart then
+			rootPart.AssemblyAngularVelocity = Vector3.zero
+			rootPart.AssemblyLinearVelocity = Vector3.zero
+		end
+
+		if humanoid then
+			humanoid.PlatformStand = false
+			humanoid.WalkSpeed = originalWalkSpeed
+			humanoid.JumpPower = originalJumpPower
+			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end
+end
+
+local function startSlam(character)
+	if not character then return end
+	local humanoid = character:WaitForChild("Humanoid")
+	local rootPart = character:WaitForChild("HumanoidRootPart")
+
+	originalWalkSpeed = humanoid.WalkSpeed
+	originalJumpPower = humanoid.JumpPower
+
+	slamConnection = RunService.Heartbeat:Connect(function()
+		if not slamActive or not character.Parent then return end
+		humanoid.WalkSpeed = 0
+		humanoid.JumpPower = 0
+		humanoid.PlatformStand = true
+	end)
+
+	slamThread = task.spawn(function()
+		while slamActive and character.Parent do
+			local dirX = (math.random(0, 1) == 0 and -1 or 1) * math.random(45, 85)
+			local dirZ = (math.random(0, 1) == 0 and -1 or 1) * math.random(45, 85)
+			local smallHop = math.random(8, 22)
+
+			rootPart.AssemblyLinearVelocity = Vector3.new(dirX, smallHop, dirZ)
+			rootPart.AssemblyAngularVelocity = Vector3.new(
+				math.random(-25, 25),
+				math.random(-25, 25),
+				math.random(-25, 25)
+			)
+
+			task.wait(math.random(25, 45) / 100)
+			if not slamActive or not character.Parent then break end
+
+			rootPart.AssemblyLinearVelocity = Vector3.new(
+				rootPart.AssemblyLinearVelocity.X * 0.4,
+				-55,
+				rootPart.AssemblyLinearVelocity.Z * 0.4
+			)
+
+			task.wait(math.random(35, 75) / 100)
+		end
+	end)
+end
+
+local function toggleSlam()
+	slamActive = not slamActive
+
+	if slamActive then
+		slamButton.Text = "Slam Chaos: ON"
+		slamButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+		slamButton.TextColor3 = Color3.fromRGB(15, 15, 15)
+		startSlam(player.Character)
+	else
+		slamButton.Text = "Slam Chaos: OFF"
+		slamButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+		slamButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+		cleanupSlam(player.Character)
+	end
+end
+
+local snakeActive = false
+local snakeConnection = nil
+local lastSwimSoundTime = 0
+
+local function cleanupSnake(character)
+	if snakeConnection then
+		snakeConnection:Disconnect()
+		snakeConnection = nil
+	end
+
+	if character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+		if rootPart then
+			local swimSound = rootPart:FindFirstChild("RemawedSnakeSwimSound")
+			if swimSound then
+				swimSound:Stop()
+				swimSound:Destroy()
+			end
+			rootPart.AssemblyAngularVelocity = Vector3.zero
+			rootPart.AssemblyLinearVelocity = Vector3.zero
+			rootPart.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, 2, 0))
+		end
+
+		if humanoid then
+			humanoid.AutoRotate = true
+			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end
+end
+
+local function startSnake(character)
+	if not character then return end
+	local humanoid = character:WaitForChild("Humanoid")
+	local rootPart = character:WaitForChild("HumanoidRootPart")
+
+	local swimSound = rootPart:FindFirstChild("RemawedSnakeSwimSound")
+	if not swimSound then
+		swimSound = Instance.new("Sound")
+		swimSound.Name = "RemawedSnakeSwimSound"
+		swimSound.SoundId = "rbxasset://sounds/action_swim.mp3"
+		swimSound.Volume = 0.85
+		swimSound.PlaybackSpeed = 1.15
+		swimSound.Parent = rootPart
+	end
+
+	humanoid.AutoRotate = false
+	lastSwimSoundTime = 0
+
+	snakeConnection = RunService.Heartbeat:Connect(function()
+		if not snakeActive or not character.Parent then return end
+
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+		humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
+		humanoid.Jump = true
+
+		local moveDir = humanoid.MoveDirection
+		local currentPos = rootPart.Position
+
+		local lookDir = moveDir.Magnitude > 0.05 and moveDir or Vector3.new(rootPart.CFrame.LookVector.X, 0, rootPart.CFrame.LookVector.Z)
+		if lookDir.Magnitude < 0.01 then
+			lookDir = Vector3.new(0, 0, -1)
+		else
+			lookDir = lookDir.Unit
+		end
+
+		local flatCFrame = CFrame.lookAt(currentPos, currentPos + lookDir) * CFrame.Angles(math.rad(-90), 0, 0)
+		rootPart.CFrame = flatCFrame
+		rootPart.AssemblyAngularVelocity = Vector3.zero
+
+		if moveDir.Magnitude > 0.05 then
+			rootPart.AssemblyLinearVelocity = Vector3.new(
+				moveDir.X * 40,
+				-35,
+				moveDir.Z * 40
+			)
+		else
+			rootPart.AssemblyLinearVelocity = Vector3.new(0, -35, 0)
+		end
+
+		if tick() - lastSwimSoundTime >= 0.42 then
+			lastSwimSoundTime = tick()
+			swimSound:Play()
+		end
+	end)
+end
+
+local function toggleSnake()
+	snakeActive = not snakeActive
+
+	if snakeActive then
+		snakeButton.Text = "Snake: ON"
+		snakeButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+		snakeButton.TextColor3 = Color3.fromRGB(15, 15, 15)
+		startSnake(player.Character)
+	else
+		snakeButton.Text = "Snake: OFF"
+		snakeButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+		snakeButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+		cleanupSnake(player.Character)
+	end
+end
+
+local fartActive = false
+local fartConnection = nil
+
+local function cleanupFart(character)
+	if fartConnection then
+		fartConnection:Disconnect()
+		fartConnection = nil
+	end
+
+	if character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+		if rootPart then
+			local smoke = rootPart:FindFirstChild("RemawedFartSmoke")
+			if smoke then smoke:Destroy() end
+			local sound = rootPart:FindFirstChild("RemawedFartSound")
+			if sound then
+				sound:Stop()
+				sound:Destroy()
+			end
+			rootPart.AssemblyAngularVelocity = Vector3.zero
+			rootPart.AssemblyLinearVelocity = Vector3.zero
+		end
+
+		if humanoid then
+			humanoid.Sit = false
+			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end
+end
+
+local function startFart(character)
+	if not character then return end
+	local humanoid = character:WaitForChild("Humanoid")
+	local rootPart = character:WaitForChild("HumanoidRootPart")
+
+	sendChatMessage("💩POOP MODE💩")
+
+	local smoke = Instance.new("ParticleEmitter")
+	smoke.Name = "RemawedFartSmoke"
+	smoke.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(115, 75, 35)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 150, 50))
+	})
+	smoke.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1.2),
+		NumberSequenceKeypoint.new(1, 3.5)
+	})
+	smoke.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.2),
+		NumberSequenceKeypoint.new(1, 1)
+	})
+	smoke.Lifetime = NumberRange.new(0.5, 1.1)
+	smoke.Rate = 65
+	smoke.Speed = NumberRange.new(8, 16)
+	smoke.EmissionDirection = Enum.NormalId.Bottom
+	smoke.Parent = rootPart
+
+	local fartSound = Instance.new("Sound")
+	fartSound.Name = "RemawedFartSound"
+	fartSound.SoundId = "rbxasset://sounds/Rocket whoosh 01.wav"
+	fartSound.Volume = 0.75
+	fartSound.PlaybackSpeed = 0.75
+	fartSound.Looped = true
+	fartSound.Parent = rootPart
+	fartSound:Play()
+
+	rootPart.CFrame = rootPart.CFrame + Vector3.new(0, 4, 0)
+
+	fartConnection = RunService.Heartbeat:Connect(function()
+		if not fartActive or not character.Parent then return end
+
+		humanoid.Sit = true
+		humanoid:ChangeState(Enum.HumanoidStateType.Seated)
+
+		local moveDir = humanoid.MoveDirection
+		local lookVec = rootPart.CFrame.LookVector
+		local horizontalDir = moveDir.Magnitude > 0.05 and moveDir or Vector3.new(lookVec.X, 0, lookVec.Z)
+
+		if horizontalDir.Magnitude > 0.01 then
+			horizontalDir = horizontalDir.Unit
+		end
+
+		local wobble = math.sin(tick() * 14) * 4
+		rootPart.AssemblyLinearVelocity = Vector3.new(
+			horizontalDir.X * 38,
+			22 + wobble,
+			horizontalDir.Z * 38
+		)
+		rootPart.AssemblyAngularVelocity = Vector3.zero
+	end)
+end
+
+local function toggleFart()
+	fartActive = not fartActive
+
+	if fartActive then
+		fartButton.Text = "Fart: ON"
+		fartButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+		fartButton.TextColor3 = Color3.fromRGB(15, 15, 15)
+		startFart(player.Character)
+	else
+		fartButton.Text = "Fart: OFF"
+		fartButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+		fartButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+		cleanupFart(player.Character)
+	end
+end
+
+local bugActive = false
+local bugConnection = nil
+local savedBugCFrame = nil
+local targetIndex = 1
+
+local function cleanupBug(character)
+	if bugConnection then
+		bugConnection:Disconnect()
+		bugConnection = nil
+	end
+
+	if character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+		if rootPart then
+			rootPart.AssemblyAngularVelocity = Vector3.zero
+			rootPart.AssemblyLinearVelocity = Vector3.zero
+			if savedBugCFrame then
+				rootPart.CFrame = savedBugCFrame
+			end
+		end
+
+		if humanoid then
+			humanoid.PlatformStand = false
+			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
+	end
+
+	savedBugCFrame = nil
+end
+
+local function startBug(character)
+	if not character then return end
+	local humanoid = character:WaitForChild("Humanoid")
+	local rootPart = character:WaitForChild("HumanoidRootPart")
+
+	savedBugCFrame = rootPart.CFrame
+	targetIndex = 1
+
+	bugConnection = RunService.Heartbeat:Connect(function()
+		if not bugActive or not character.Parent then return end
+
+		humanoid.PlatformStand = true
+
+		local targets = {}
+		for _, otherPlayer in ipairs(Players:GetPlayers()) do
+			if otherPlayer ~= player and otherPlayer.Character then
+				local targetRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+				local targetHum = otherPlayer.Character:FindFirstChildOfClass("Humanoid")
+				if targetRoot and targetHum and targetHum.Health > 0 then
+					table.insert(targets, targetRoot)
+				end
+			end
+		end
+
+		local destinationPos
+		if #targets > 0 then
+			if targetIndex > #targets then
+				targetIndex = 1
+			end
+			local currentTarget = targets[targetIndex]
+			local offset = Vector3.new(
+				math.random(-2, 2),
+				math.random(-1, 2),
+				math.random(-2, 2)
+			)
+			destinationPos = currentTarget.Position + offset
+			targetIndex += 1
+		else
+			local basePos = savedBugCFrame and savedBugCFrame.Position or rootPart.Position
+			destinationPos = basePos + Vector3.new(
+				math.random(-35, 35),
+				math.random(2, 25),
+				math.random(-35, 35)
+			)
+		end
+
+		local randomAngles = CFrame.Angles(
+			math.rad(math.random(0, 360)),
+			math.rad(math.random(0, 360)),
+			math.rad(math.random(0, 360))
+		)
+		rootPart.CFrame = CFrame.new(destinationPos) * randomAngles
+
+		local dir = (destinationPos - rootPart.Position)
+		if dir.Magnitude < 0.01 then
+			dir = Vector3.new(math.random(-10, 10), math.random(-10, 10), math.random(-10, 10))
+		end
+		dir = dir.Unit
+
+		local ultraSpeed = math.random(32000, 45000)
+		rootPart.AssemblyLinearVelocity = dir * ultraSpeed
+		rootPart.AssemblyAngularVelocity = Vector3.new(
+			math.random(-35000, 35000),
+			math.random(-35000, 35000),
+			math.random(-35000, 35000)
+		)
+	end)
+end
+
+local function toggleBug()
+	bugActive = not bugActive
+
+	if bugActive then
+		bugButton.Text = "Bug: ON"
+		bugButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+		bugButton.TextColor3 = Color3.fromRGB(15, 15, 15)
+		startBug(player.Character)
+	else
+		bugButton.Text = "Bug: OFF"
+		bugButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+		bugButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+		cleanupBug(player.Character)
+	end
+end
+
+player.CharacterAdded:Connect(function(newCharacter)
+	task.wait(0.2)
+	if slamActive then
+		cleanupSlam(nil)
+		startSlam(newCharacter)
+	end
+	if snakeActive then
+		cleanupSnake(nil)
+		startSnake(newCharacter)
+	end
+	if fartActive then
+		cleanupFart(nil)
+		startFart(newCharacter)
+	end
+	if bugActive then
+		if bugConnection then
+			bugConnection:Disconnect()
+			bugConnection = nil
+		end
+		startBug(newCharacter)
+	end
+end)
+
+spasmButton.MouseButton1Click:Connect(toggleSpasm)
+slamButton.MouseButton1Click:Connect(toggleSlam)
+snakeButton.MouseButton1Click:Connect(toggleSnake)
+fartButton.MouseButton1Click:Connect(toggleFart)
+bugButton.MouseButton1Click:Connect(toggleBug)
+
+----------------------------------------------------------------
+-- SISTEMA DI TRASCINAMENTO (DRAG) 100% ROBUSTO E FLUIDO
+----------------------------------------------------------------
+local dragging = false
+local dragInput, mousePos, framePos
+
+topBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		mousePos = input.Position
+		framePos = mainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - mousePos
+		mainFrame.Position = UDim2.new(
+			framePos.X.Scale,
+			framePos.X.Offset + delta.X,
+			framePos.Y.Scale,
+			framePos.Y.Offset + delta.Y
+		)
+	end
+end)
