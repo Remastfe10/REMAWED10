@@ -93,9 +93,9 @@ Start.Size = UDim2.fromOffset(190,55)
 Start.Position = UDim2.new(0.5,-95,0.05,0)
 Start.BackgroundColor3 = BG
 Start.BackgroundTransparency = 0.1 -- Leggermente trasparente anche il bottone iniziale
-Start.Text = "PREMI G"
+Start.Text = "PRESS G"
 Start.TextColor3 = GREEN
-Start.Font = Enum.Font.GothamBlack
+Start.Font = Enum.Font.Gotham
 Start.TextSize = 20
 Start.Parent = Gui
 
