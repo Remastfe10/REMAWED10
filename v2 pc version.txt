@@ -1,3 +1,4 @@
+--!strict
 -- REMAWED 10 PC EDITION v0.4.1 (Semi-Transparent Background + Clean Keyboard Mode)
 -- Roblox LocalScript
 
@@ -14,9 +15,14 @@ local BG = Color3.fromRGB(10,11,17)
 local PANEL = Color3.fromRGB(20,22,30)
 local WHITE = Color3.fromRGB(255,255,255)
 
-local entries = {}
+type Entry = {
+	title: string,
+	code: string,
+}
 
-local function addSlot(title, code)
+local entries: { Entry } = {}
+
+local function addSlot(title: string, code: string)
 	table.insert(entries, {
 		title = title,
 		code = code
@@ -75,7 +81,7 @@ addSlot(
 )
 
 local selected = 1
-local visibleEntries = {}
+local visibleEntries: { number } = {}
 local inputBuffer = ""
 local lastInputTime = 0
 
@@ -86,24 +92,34 @@ Gui.Name = "Remawed10PC"
 Gui.ResetOnSpawn = false
 Gui.Parent = PlayerGui
 
--- START
+-- START (STESSA POSIZIONE, STILE PROMPTLABEL)
 
 local Start = Instance.new("TextButton")
-Start.Size = UDim2.fromOffset(190,55)
-Start.Position = UDim2.new(0.5,-95,0.05,0)
-Start.BackgroundColor3 = BG
-Start.BackgroundTransparency = 0.1 -- Leggermente trasparente anche il bottone iniziale
+Start.Name = "PressGPrompt"
+Start.Size = UDim2.fromOffset(190, 55)
+Start.Position = UDim2.new(0.5, -95, 0.05, 0)
+Start.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Start.BackgroundTransparency = 0.25
+Start.BorderSizePixel = 0
 Start.Text = "PRESS G"
-Start.TextColor3 = GREEN
-Start.Font = Enum.Font.Gotham
-Start.TextSize = 20
+Start.TextColor3 = Color3.fromRGB(0, 255, 0)
+Start.TextScaled = true
+Start.TextWrapped = true
+Start.FontFace = Font.new(
+	"rbxasset://fonts/families/SourceSansPro.json",
+	Enum.FontWeight.Regular,
+	Enum.FontStyle.Normal
+)
 Start.Parent = Gui
 
-Instance.new("UICorner",Start).CornerRadius = UDim.new(0,12)
+local textSizeConstraint = Instance.new("UITextSizeConstraint")
+textSizeConstraint.MaxTextSize = 28
+textSizeConstraint.MinTextSize = 10
+textSizeConstraint.Parent = Start
 
-local startStroke = Instance.new("UIStroke",Start)
-startStroke.Color = GREEN
-startStroke.Thickness = 2
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = Start
 
 -- MAIN (SEMI-TRASPARENTE)
 
@@ -111,7 +127,7 @@ local Main = Instance.new("Frame")
 Main.Size = UDim2.new(0.8,0,0.78,0)
 Main.Position = UDim2.new(0.1,0,0.04,0)
 Main.BackgroundColor3 = BG
-Main.BackgroundTransparency = 0.15 -- <--- QUI È IMPOSTATA LA SEMI-TRASPARENZA DEL PANNELLO
+Main.BackgroundTransparency = 0.15
 Main.Visible = false
 Main.Parent = Gui
 
@@ -126,7 +142,7 @@ mainStroke.Thickness = 1.5
 local Header = Instance.new("Frame")
 Header.Size = UDim2.new(1,0,0,65)
 Header.BackgroundColor3 = PANEL
-Header.BackgroundTransparency = 0.25 -- Semi-trasparente
+Header.BackgroundTransparency = 0.25
 Header.Parent = Main
 
 Instance.new("UICorner",Header).CornerRadius = UDim.new(0,15)
@@ -160,7 +176,7 @@ local Search = Instance.new("TextBox")
 Search.Size = UDim2.new(1,-40,0,44)
 Search.Position = UDim2.fromOffset(20,80)
 Search.BackgroundColor3 = PANEL
-Search.BackgroundTransparency = 0.25 -- Semi-trasparente
+Search.BackgroundTransparency = 0.25
 Search.PlaceholderText = "search bar..."
 Search.Text = ""
 Search.TextColor3 = WHITE
@@ -224,7 +240,7 @@ Status.Parent = Main
 
 -- GESTIONE SOSTITUZIONE / PULIZIA PRECEDENTE ESECUZIONE
 
-local activeCleanup = nil
+local activeCleanup: (() -> ())? = nil
 
 local function cleanupPreviousExecution()
 	if typeof(activeCleanup) == "function" then
@@ -244,21 +260,21 @@ local function executeSelected()
 
 	Status.Text = "EXECUTION SUCCESSFUL! IF IT'S OK LIKE THIS, PRESS G TO CLOSE THE PANEL: "..data.title
 
-	local spawnedInstances = {}
-	local connGui
-	local connWs
+	local spawnedInstances: { Instance } = {}
+	local connGui: RBXScriptConnection?
+	local connWs: RBXScriptConnection?
 
-	connGui = PlayerGui.DescendantAdded:Connect(function(inst)
+	connGui = PlayerGui.DescendantAdded:Connect(function(inst: Instance)
 		if inst ~= Gui and not inst:IsDescendantOf(Gui) then
 			table.insert(spawnedInstances, inst)
 		end
 	end)
 
-	connWs = workspace.DescendantAdded:Connect(function(inst)
+	connWs = workspace.DescendantAdded:Connect(function(inst: Instance)
 		table.insert(spawnedInstances, inst)
 	end)
 
-	local returnedValue
+	local returnedValue: any
 	local success, err = pcall(function()
 		local fn = loadstring(data.code)
 		if fn then
@@ -339,7 +355,7 @@ local function refresh()
 			local Row = Instance.new("Frame")
 			Row.Size = UDim2.new(1,-8,0,58)
 			Row.BackgroundColor3 = (selected == i) and Color3.fromRGB(25,48,43) or PANEL
-			Row.BackgroundTransparency = 0.25 -- Anche le righe leggermente trasparenti
+			Row.BackgroundTransparency = 0.25
 			Row.LayoutOrder = #visibleEntries
 			Row.Parent = Scroll
 
@@ -447,7 +463,7 @@ Search:GetPropertyChangedSignal("Text"):Connect(function()
 end)
 
 -- MAPPATURA NUMERICA TASTIERA
-local keyToNum = {
+local keyToNum: { [Enum.KeyCode]: string } = {
 	[Enum.KeyCode.Zero] = "0", [Enum.KeyCode.One] = "1", [Enum.KeyCode.Two] = "2",
 	[Enum.KeyCode.Three] = "3", [Enum.KeyCode.Four] = "4", [Enum.KeyCode.Five] = "5",
 	[Enum.KeyCode.Six] = "6", [Enum.KeyCode.Seven] = "7", [Enum.KeyCode.Eight] = "8",
@@ -460,7 +476,7 @@ local keyToNum = {
 
 -- CONTROLLI DA TASTIERA GLOBALI
 
-UIS.InputBegan:Connect(function(input, processed)
+UIS.InputBegan:Connect(function(input: InputObject, processed: boolean)
 	if input.KeyCode == Enum.KeyCode.G and not Search:IsFocused() then
 		if Main.Visible then
 			closePanel()
