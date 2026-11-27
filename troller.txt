@@ -1,4 +1,4 @@
--- Servizi necessari
+-- Required services
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
@@ -10,13 +10,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Rimuovi la GUI se esiste già per evitare duplicati
+-- Remove existing GUI to prevent duplicates
 local existingGui = playerGui:FindFirstChild("Remawed10TroolGui") or CoreGui:FindFirstChild("Remawed10TroolGui")
 if existingGui then
 	existingGui:Destroy()
 end
 
--- Creazione della ScreenGui principale
+-- Create main ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "Remawed10TroolGui"
 screenGui.ResetOnSpawn = false
@@ -27,7 +27,7 @@ if not success then
 	screenGui.Parent = playerGui
 end
 
--- Finestra Principale (Main Frame) - Tema Nero e Bianco
+-- Main Frame - Black & White Theme
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 520, 0, 500)
@@ -55,7 +55,7 @@ mainGradient.Color = ColorSequence.new({
 mainGradient.Rotation = 45
 mainGradient.Parent = mainFrame
 
--- Barra Superiore (TopBar per il trascinamento)
+-- TopBar (for dragging)
 local topBar = Instance.new("Frame")
 topBar.Name = "TopBar"
 topBar.Size = UDim2.new(1, 0, 0, 48)
@@ -68,14 +68,14 @@ titleLabel.Size = UDim2.new(1, -70, 1, 0)
 titleLabel.Position = UDim2.new(0, 20, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Font = Enum.Font.GothamBold
-titleLabel.Text = "⚡ Remawed10 Trool"
+titleLabel.Text = "⚡ Remawed10 Troll"
 titleLabel.RichText = true
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 titleLabel.TextSize = 16
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = topBar
 
--- Pulsante Minimizza (-)
+-- Minimize Button (-)
 local isMinimized = false
 local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 32, 0, 32)
@@ -92,7 +92,7 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 8)
 minCorner.Parent = minimizeBtn
 
--- Contenitore del corpo
+-- Body Container
 local bodyContainer = Instance.new("Frame")
 bodyContainer.Size = UDim2.new(1, 0, 1, -48)
 bodyContainer.Position = UDim2.new(0, 0, 0, 48)
@@ -107,7 +107,7 @@ divider.BackgroundTransparency = 0.5
 divider.BorderSizePixel = 0
 divider.Parent = bodyContainer
 
--- Logica Minimizzazione
+-- Minimize Logic
 minimizeBtn.MouseButton1Click:Connect(function()
 	isMinimized = not isMinimized
 	if isMinimized then
@@ -121,7 +121,7 @@ minimizeBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Barra di navigazione superiore (Tab di categoria)
+-- Top Navigation Bar (Category Tabs)
 local topTabHolder = Instance.new("Frame")
 topTabHolder.Size = UDim2.new(1, -30, 0, 36)
 topTabHolder.Position = UDim2.new(0, 15, 0, 10)
@@ -134,7 +134,7 @@ topTabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 topTabLayout.Padding = UDim.new(0, 10)
 topTabLayout.Parent = topTabHolder
 
--- Container dei Contenuti Principali
+-- Main Content Container
 local contentContainer = Instance.new("Frame")
 contentContainer.Size = UDim2.new(1, -30, 1, -60)
 contentContainer.Position = UDim2.new(0, 15, 0, 52)
@@ -144,7 +144,7 @@ contentContainer.Parent = bodyContainer
 local function animateTabButton(btn, isSelected)
 	local targetColor = isSelected and Color3.fromRGB(240, 240, 240) or Color3.fromRGB(30, 30, 30)
 	local targetTextColor = isSelected and Color3.fromRGB(15, 15, 15) or Color3.fromRGB(200, 200, 200)
-	
+
 	TweenService:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 		BackgroundColor3 = targetColor,
 		TextColor3 = targetTextColor
@@ -166,7 +166,7 @@ local function createTopTabButton(name, order)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = btn
-	
+
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = Color3.fromRGB(80, 80, 80)
 	stroke.Transparency = 0.5
@@ -186,41 +186,41 @@ local function createSectionFrame()
 	frame.CanvasSize = UDim2.new(0, 0, 0, 0)
 	frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	frame.Parent = contentContainer
-	
+
 	local list = Instance.new("UIListLayout")
 	list.SortOrder = Enum.SortOrder.LayoutOrder
 	list.Padding = UDim.new(0, 8)
 	list.Parent = frame
-	
+
 	local pad = Instance.new("UIPadding")
 	pad.PaddingRight = UDim.new(0, 5)
 	pad.Parent = frame
-	
+
 	return frame
 end
 
-local troolTabBtn = createTopTabButton("🎯 TROOL PLAYERS", 1)
+local trollTabBtn = createTopTabButton("🎯 TROLL PLAYERS", 1)
 local avatarTabBtn = createTopTabButton("🔥 Avatar Troller", 2)
 
-local troolSection = createSectionFrame()
+local trollSection = createSectionFrame()
 local avatarSection = createSectionFrame()
 
-troolSection.Visible = true
-animateTabButton(troolTabBtn, true)
+trollSection.Visible = true
+animateTabButton(trollTabBtn, true)
 
 local function switchMainTab(selectedBtn, selectedSection)
-	troolSection.Visible = false
+	trollSection.Visible = false
 	avatarSection.Visible = false
-	
-	animateTabButton(troolTabBtn, false)
+
+	animateTabButton(trollTabBtn, false)
 	animateTabButton(avatarTabBtn, false)
-	
+
 	selectedSection.Visible = true
 	animateTabButton(selectedBtn, true)
 end
 
-troolTabBtn.MouseButton1Click:Connect(function()
-	switchMainTab(troolTabBtn, troolSection)
+trollTabBtn.MouseButton1Click:Connect(function()
+	switchMainTab(trollTabBtn, trollSection)
 end)
 
 avatarTabBtn.MouseButton1Click:Connect(function()
@@ -228,7 +228,7 @@ avatarTabBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------------------
--- SEZIONE 1: TROOL PLAYERS
+-- SECTION 1: TROLL PLAYERS
 ----------------------------------------------------------------
 local selectedTarget = nil
 
@@ -236,11 +236,11 @@ local listHeader = Instance.new("TextLabel")
 listHeader.Size = UDim2.new(1, 0, 0, 20)
 listHeader.BackgroundTransparency = 1
 listHeader.Font = Enum.Font.GothamBold
-listHeader.Text = "GIOCATORI ONLINE"
+listHeader.Text = "ONLINE PLAYERS"
 listHeader.TextColor3 = Color3.fromRGB(180, 180, 180)
 listHeader.TextSize = 11
 listHeader.TextXAlignment = Enum.TextXAlignment.Left
-listHeader.Parent = troolSection
+listHeader.Parent = trollSection
 
 local playerListContainer = Instance.new("ScrollingFrame")
 playerListContainer.Size = UDim2.new(1, 0, 0, 90)
@@ -250,7 +250,7 @@ playerListContainer.ScrollBarThickness = 3
 playerListContainer.ScrollBarImageColor3 = Color3.fromRGB(240, 240, 240)
 playerListContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 playerListContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
-playerListContainer.Parent = troolSection
+playerListContainer.Parent = trollSection
 
 local playerListCorner = Instance.new("UICorner")
 playerListCorner.CornerRadius = UDim.new(0, 10)
@@ -267,15 +267,16 @@ playerListUI.Padding = UDim.new(0, 4)
 playerListUI.Parent = playerListContainer
 
 -- Give Select Tool
+local giveToolDefaultText = "🛠️ Give Select Tool (Get tool to select)"
 local giveToolBtn = Instance.new("TextButton")
 giveToolBtn.Size = UDim2.new(1, 0, 0, 32)
 giveToolBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 giveToolBtn.BorderSizePixel = 0
 giveToolBtn.Font = Enum.Font.GothamBold
-giveToolBtn.Text = "🛠️ Give Select Tool (Prendi Tool per selezionare)"
+giveToolBtn.Text = giveToolDefaultText
 giveToolBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
 giveToolBtn.TextSize = 12
-giveToolBtn.Parent = troolSection
+giveToolBtn.Parent = trollSection
 
 local giveToolCorner = Instance.new("UICorner")
 giveToolCorner.CornerRadius = UDim.new(0, 8)
@@ -289,13 +290,13 @@ giveToolStroke.Parent = giveToolBtn
 giveToolBtn.MouseButton1Click:Connect(function()
 	local backpack = player:FindFirstChildOfClass("Backpack") or player:WaitForChild("Backpack")
 	local character = player.Character
-	
+
 	if not backpack:FindFirstChild("SelectPlayerTool") and not (character and character:FindFirstChild("SelectPlayerTool")) then
 		local tool = Instance.new("Tool")
 		tool.Name = "SelectPlayerTool"
 		tool.RequiresHandle = false
-		tool.ToolTip = "Clicca su un player per selezionarlo!"
-		
+		tool.ToolTip = "Click on a player to select them!"
+
 		tool.Activated:Connect(function()
 			local mouse = player:GetMouse()
 			local target = mouse.Target
@@ -306,24 +307,24 @@ giveToolBtn.MouseButton1Click:Connect(function()
 					charModel = charModel.Parent
 					foundPlayer = Players:GetPlayerFromCharacter(charModel)
 				end
-				
+
 				if foundPlayer and foundPlayer ~= player then
 					selectedTarget = foundPlayer
-					giveToolBtn.Text = "✅ Target Selezionato: " .. foundPlayer.Name
+					giveToolBtn.Text = "✅ Target Selected: " .. foundPlayer.Name
 					task.wait(1.5)
-					giveToolBtn.Text = "🛠️ Give Select Tool (Prendi Tool per selezionare)"
+					giveToolBtn.Text = giveToolDefaultText
 				end
 			end
 		end)
-		
+
 		tool.Parent = backpack
-		giveToolBtn.Text = "✨ Tool aggiunto nel tuo inventario!"
+		giveToolBtn.Text = "✨ Tool added to your inventory!"
 		task.wait(1.5)
-		giveToolBtn.Text = "🛠️ Give Select Tool (Prendi Tool per selezionare)"
+		giveToolBtn.Text = giveToolDefaultText
 	else
-		giveToolBtn.Text = "⚠️ Hai già il tool nell'inventario!"
+		giveToolBtn.Text = "⚠️ Tool is already in your inventory!"
 		task.wait(1.5)
-		giveToolBtn.Text = "🛠️ Give Select Tool (Prendi Tool per selezionare)"
+		giveToolBtn.Text = giveToolDefaultText
 	end
 end)
 
@@ -334,7 +335,7 @@ local backAttachConnection = nil
 local kickHeadConnection = nil
 local flingActive = false
 
-local function createTroolAction(text, callback)
+local function createTrollAction(text, callback)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(1, 0, 0, 32)
 	btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
@@ -343,7 +344,7 @@ local function createTroolAction(text, callback)
 	btn.Text = text
 	btn.TextColor3 = Color3.fromRGB(240, 240, 240)
 	btn.TextSize = 13
-	btn.Parent = troolSection
+	btn.Parent = trollSection
 
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 8)
@@ -367,7 +368,7 @@ local function createTroolAction(text, callback)
 			callback(btn)
 		else
 			local oldText = btn.Text
-			btn.Text = "⚠️ Seleziona prima un player!"
+			btn.Text = "⚠️ Select a player first!"
 			TweenService:Create(btn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(255, 100, 100)}):Play()
 			task.wait(1.5)
 			TweenService:Create(btn, TweenInfo.new(0.1), {TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
@@ -376,7 +377,7 @@ local function createTroolAction(text, callback)
 	end)
 end
 
-createTroolAction("👁️ View Player (ON / OFF)", function(btn)
+createTrollAction("👁️ View Player (ON / OFF)", function(btn)
 	if not isViewing then
 		if selectedTarget and selectedTarget.Character and selectedTarget.Character:FindFirstChild("Humanoid") then
 			workspace.CurrentCamera.CameraSubject = selectedTarget.Character.Humanoid
@@ -394,7 +395,7 @@ createTroolAction("👁️ View Player (ON / OFF)", function(btn)
 	end
 end)
 
-createTroolAction("📍 Teleport to Player", function()
+createTrollAction("📍 Teleport to Player", function()
 	local char = player.Character
 	local targetChar = selectedTarget.Character
 	if char and targetChar then
@@ -406,12 +407,12 @@ createTroolAction("📍 Teleport to Player", function()
 	end
 end)
 
-createTroolAction("🌪️ Fling Player (ON / OFF)", function(btn)
+createTrollAction("🌪️ Fling Player (ON / OFF)", function(btn)
 	flingActive = not flingActive
 	if flingActive then
 		btn.Text = "🌪️ Fling Player [ON]"
 		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240), TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
-		
+
 		task.spawn(function()
 			while flingActive and selectedTarget and selectedTarget.Character do
 				local myChar = player.Character
@@ -420,7 +421,7 @@ createTroolAction("🌪️ Fling Player (ON / OFF)", function(btn)
 					local myHRP = myChar:FindFirstChild("HumanoidRootPart")
 					local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
 					local myHum = myChar:FindFirstChildOfClass("Humanoid")
-					
+
 					if myHRP and targetHRP and myHum then
 						myHRP.CFrame = targetHRP.CFrame
 						myHRP.AssemblyLinearVelocity = Vector3.new(35000, 35000, 35000)
@@ -442,7 +443,7 @@ createTroolAction("🌪️ Fling Player (ON / OFF)", function(btn)
 	end
 end)
 
-createTroolAction("🦶 Kick Head (ON / OFF)", function(btn)
+createTrollAction("🦶 Kick Head (ON / OFF)", function(btn)
 	if not kickHeadConnection then
 		kickHeadConnection = RunService.RenderStepped:Connect(function()
 			if selectedTarget and selectedTarget.Character then
@@ -464,7 +465,7 @@ createTroolAction("🦶 Kick Head (ON / OFF)", function(btn)
 	end
 end)
 
-createTroolAction("🎒 Back Attach (ON / OFF)", function(btn)
+createTrollAction("🎒 Back Attach (ON / OFF)", function(btn)
 	if not backAttachConnection then
 		backAttachConnection = RunService.RenderStepped:Connect(function()
 			if selectedTarget and selectedTarget.Character then
@@ -485,11 +486,11 @@ createTroolAction("🎒 Back Attach (ON / OFF)", function(btn)
 	end
 end)
 
-createTroolAction("🧢 Sit Head Stabile (ON / OFF)", function(btn)
+createTrollAction("🧢 Stable Head Sit (ON / OFF)", function(btn)
 	if not sitHeadConnection then
 		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 		if humanoid then humanoid.Sit = true end
-		
+
 		sitHeadConnection = RunService.RenderStepped:Connect(function()
 			if selectedTarget and selectedTarget.Character then
 				local targetHead = selectedTarget.Character:FindFirstChild("Head")
@@ -500,16 +501,16 @@ createTroolAction("🧢 Sit Head Stabile (ON / OFF)", function(btn)
 				end
 			end
 		end)
-		btn.Text = "🧢 Sit Head Stabile [ON]"
+		btn.Text = "🧢 Stable Head Sit [ON]"
 		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240), TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
 	else
 		if sitHeadConnection then sitHeadConnection:Disconnect() sitHeadConnection = nil end
-		btn.Text = "🧢 Sit Head Stabile (ON / OFF)"
+		btn.Text = "🧢 Stable Head Sit (ON / OFF)"
 		TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(30, 30, 30), TextColor3 = Color3.fromRGB(240, 240, 240)}):Play()
 	end
 end)
 
-createTroolAction("🏃 Follow Player (ON / OFF)", function(btn)
+createTrollAction("🏃 Follow Player (ON / OFF)", function(btn)
 	if not followConnection then
 		followConnection = RunService.RenderStepped:Connect(function()
 			if selectedTarget and selectedTarget.Character then
@@ -519,7 +520,7 @@ createTroolAction("🏃 Follow Player (ON / OFF)", function(btn)
 					local humanoid = char:FindFirstChildOfClass("Humanoid")
 					local hrp = char:FindFirstChild("HumanoidRootPart")
 					local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
-					
+
 					if humanoid and hrp and targetHRP then
 						local distance = (hrp.Position - targetHRP.Position).Magnitude
 						if distance > 35 then
@@ -542,10 +543,101 @@ createTroolAction("🏃 Follow Player (ON / OFF)", function(btn)
 	end
 end)
 
-local function refreshPlayerList()
-	-- Conserva la posizione dello scroll durante l'aggiornamento della lista.
-	local savedCanvasPosition = playerListContainer.CanvasPosition
+-- Smooth incremental player list refresh (Avatar first, then Nickname)
+local playerRowCache = {}
 
+local function applyRowSelectionVisual(rowData, isSelected, instant)
+	local targetBg = isSelected and Color3.fromRGB(240, 240, 240) or Color3.fromRGB(25, 25, 25)
+	local targetFg = isSelected and Color3.fromRGB(15, 15, 15) or Color3.fromRGB(220, 220, 220)
+
+	if instant then
+		rowData.button.BackgroundColor3 = targetBg
+		rowData.label.TextColor3 = targetFg
+	else
+		TweenService:Create(rowData.button, TweenInfo.new(0.15), {BackgroundColor3 = targetBg}):Play()
+		TweenService:Create(rowData.label, TweenInfo.new(0.15), {TextColor3 = targetFg}):Play()
+	end
+end
+
+local function updateAllRowsVisuals()
+	for targetPlayer, rowData in pairs(playerRowCache) do
+		if rowData.button and rowData.button.Parent then
+			applyRowSelectionVisual(rowData, selectedTarget == targetPlayer, false)
+		end
+	end
+end
+
+local function createPlayerRow(targetPlayer)
+	local pBtn = Instance.new("TextButton")
+	pBtn.Name = "Player_" .. targetPlayer.UserId
+	pBtn.Size = UDim2.new(1, 0, 0, 54)
+	pBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+	pBtn.BorderSizePixel = 0
+	pBtn.Text = ""
+	pBtn.Parent = playerListContainer
+
+	local pCorner = Instance.new("UICorner")
+	pCorner.CornerRadius = UDim.new(0, 8)
+	pCorner.Parent = pBtn
+
+	-- 1) Account Avatar first (left)
+	local avatarImg = Instance.new("ImageLabel")
+	avatarImg.Name = "AvatarImage"
+	avatarImg.Size = UDim2.new(0, 44, 0, 44)
+	avatarImg.Position = UDim2.new(0, 6, 0.5, -22)
+	avatarImg.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+	avatarImg.BackgroundTransparency = 0
+	avatarImg.BorderSizePixel = 0
+	avatarImg.ScaleType = Enum.ScaleType.Fit
+	avatarImg.Parent = pBtn
+
+	local imgCorner = Instance.new("UICorner")
+	imgCorner.CornerRadius = UDim.new(0, 6)
+	imgCorner.Parent = avatarImg
+
+	-- 2) Nickname right after the avatar
+	local nameLabel = Instance.new("TextLabel")
+	nameLabel.Name = "NicknameLabel"
+	nameLabel.Size = UDim2.new(1, -64, 1, 0)
+	nameLabel.Position = UDim2.new(0, 58, 0, 0)
+	nameLabel.BackgroundTransparency = 1
+	nameLabel.Font = Enum.Font.GothamMedium
+	nameLabel.Text = targetPlayer.Name
+	nameLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+	nameLabel.TextSize = 13
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	nameLabel.Parent = pBtn
+
+	task.spawn(function()
+		pcall(function()
+			local image = Players:GetUserThumbnailAsync(
+				targetPlayer.UserId,
+				Enum.ThumbnailType.AvatarThumbnail,
+				Enum.ThumbnailSize.Size420x420
+			)
+			if avatarImg and avatarImg.Parent then
+				avatarImg.Image = image
+			end
+		end)
+	end)
+
+	local rowData = {
+		button = pBtn,
+		label = nameLabel,
+		avatar = avatarImg
+	}
+
+	pBtn.MouseButton1Click:Connect(function()
+		selectedTarget = targetPlayer
+		updateAllRowsVisuals()
+	end)
+
+	applyRowSelectionVisual(rowData, selectedTarget == targetPlayer, true)
+	return rowData
+end
+
+local function refreshPlayerList()
 	if selectedTarget and not selectedTarget.Parent then
 		selectedTarget = nil
 		if isViewing and player.Character and player.Character:FindFirstChild("Humanoid") then
@@ -558,97 +650,51 @@ local function refreshPlayerList()
 		flingActive = false
 	end
 
-	for _, child in ipairs(playerListContainer:GetChildren()) do
-		if child:IsA("TextButton") then
-			child:Destroy()
-		end
-	end
-
+	local activePlayers = {}
 	for _, p in ipairs(Players:GetPlayers()) do
 		if p ~= player then
-			local pBtn = Instance.new("TextButton")
-			pBtn.Size = UDim2.new(1, 0, 0, 54)
-			if selectedTarget == p then
-				pBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-			else
-				pBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-			end
-			pBtn.BorderSizePixel = 0
-			pBtn.Text = ""
-			pBtn.Parent = playerListContainer
-
-			local pCorner = Instance.new("UICorner")
-			pCorner.CornerRadius = UDim.new(0, 8)
-			pCorner.Parent = pBtn
-
-			local avatarImg = Instance.new("ImageLabel")
-			avatarImg.Size = UDim2.new(0, 44, 0, 44)
-			avatarImg.Position = UDim2.new(0, 5, 0.5, -22)
-			avatarImg.BackgroundTransparency = 1
-			avatarImg.ScaleType = Enum.ScaleType.Fit
-
-			pcall(function()
-				local image, isReady = Players:GetUserThumbnailAsync(
-					p.UserId,
-					Enum.ThumbnailType.AvatarThumbnail,
-					Enum.ThumbnailSize.Size420x420
-				)
-				avatarImg.Image = image
-			end)
-			avatarImg.Parent = pBtn
-
-			local imgCorner = Instance.new("UICorner")
-			imgCorner.CornerRadius = UDim.new(0, 6)
-			imgCorner.Parent = avatarImg
-
-			local nameLabel = Instance.new("TextLabel")
-			nameLabel.Size = UDim2.new(1, -60, 1, 0)
-			nameLabel.Position = UDim2.new(0, 56, 0, 0)
-			nameLabel.BackgroundTransparency = 1
-			nameLabel.Font = Enum.Font.GothamMedium
-			nameLabel.Text = p.Name
-			if selectedTarget == p then
-				nameLabel.TextColor3 = Color3.fromRGB(15, 15, 15)
-			else
-				nameLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-			end
-			nameLabel.TextSize = 13
-			nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-			nameLabel.Parent = pBtn
-
-			pBtn.MouseButton1Click:Connect(function()
-				selectedTarget = p
-				for _, b in ipairs(playerListContainer:GetChildren()) do
-					if b:IsA("TextButton") then
-						TweenService:Create(b, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(25, 25, 25)}):Play()
-						local lbl = b:FindFirstChildOfClass("TextLabel")
-						if lbl then TweenService:Create(lbl, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(220, 220, 220)}):Play() end
-					end
-				end
-				TweenService:Create(pBtn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(240, 240, 240)}):Play()
-				TweenService:Create(nameLabel, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(15, 15, 15)}):Play()
-			end)
+			activePlayers[p] = true
 		end
 	end
 
-	-- Aspetta che UIListLayout/AutomaticCanvasSize ricalcolino l'altezza,
-	-- poi ripristina la posizione precedente invece di tornare in cima.
-	task.defer(function()
-		RunService.Heartbeat:Wait()
-		playerListContainer.CanvasPosition = savedCanvasPosition
-	end)
+	-- Remove rows for players who left
+	for cachedPlayer, rowData in pairs(playerRowCache) do
+		if not activePlayers[cachedPlayer] then
+			if rowData.button then
+				rowData.button:Destroy()
+			end
+			playerRowCache[cachedPlayer] = nil
+		end
+	end
+
+	-- Add rows for new players and sync visual state without recreating existing ones
+	for index, p in ipairs(Players:GetPlayers()) do
+		if p ~= player then
+			local rowData = playerRowCache[p]
+			if not rowData then
+				rowData = createPlayerRow(p)
+				playerRowCache[p] = rowData
+			end
+			rowData.button.LayoutOrder = index
+			if rowData.label.Text ~= p.Name then
+				rowData.label.Text = p.Name
+			end
+			applyRowSelectionVisual(rowData, selectedTarget == p, true)
+		end
+	end
 end
+
+refreshPlayerList()
 
 task.spawn(function()
 	while true do
-		refreshPlayerList()
 		task.wait(1)
+		refreshPlayerList()
 	end
 end)
 
-
 ----------------------------------------------------------------
--- SEZIONE 2: AVATAR TROLLER
+-- SECTION 2: AVATAR TROLLER
 ----------------------------------------------------------------
 local function createAvatarButton(text, order)
 	local btn = Instance.new("TextButton")
@@ -1221,7 +1267,7 @@ fartButton.MouseButton1Click:Connect(toggleFart)
 bugButton.MouseButton1Click:Connect(toggleBug)
 
 ----------------------------------------------------------------
--- SISTEMA DI TRASCINAMENTO (DRAG) 100% ROBUSTO E FLUIDO
+-- DRAG SYSTEM
 ----------------------------------------------------------------
 local dragging = false
 local dragInput, mousePos, framePos
@@ -1231,7 +1277,7 @@ topBar.InputBegan:Connect(function(input)
 		dragging = true
 		mousePos = input.Position
 		framePos = mainFrame.Position
-		
+
 		input.Changed:Connect(function()
 			if input.UserInputState == Enum.UserInputState.End then
 				dragging = false
