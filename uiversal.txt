@@ -1,0 +1,1299 @@
+-- LocalScript for Roblox Client: Remawed10 universal pannel東
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local localPlayer = Players.LocalPlayer
+local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+-- Remove any previous versions
+for _, guiName in ipairs({
+	"PannelloUniversaleRemawed10Gui",
+	"Remawed10UniversalPanelGui",
+	"Remawed10AvatarSettingsGui",
+	"Remawed10VisualPanel"
+}) do
+	local existing = playerGui:FindFirstChild(guiName)
+	if existing then
+		existing:Destroy()
+	end
+end
+
+-- ==================== GUI CREATION ====================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "Remawed10UniversalPanelGui"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.AutoLocalize = false
+screenGui.Parent = playerGui
+
+local PANEL_WIDTH = 460
+local PANEL_HEIGHT = 720
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainPanel"
+mainFrame.Size = UDim2.new(0, PANEL_WIDTH, 0, PANEL_HEIGHT)
+mainFrame.Position = UDim2.new(0.5, -PANEL_WIDTH / 2, 0.5, -PANEL_HEIGHT / 2)
+mainFrame.BackgroundColor3 = Color3.fromRGB(22, 24, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(60, 65, 80)
+mainStroke.Thickness = 1.5
+mainStroke.Parent = mainFrame
+
+-- Top bar
+local topBar = Instance.new("Frame")
+topBar.Name = "TopBar"
+topBar.Size = UDim2.new(1, 0, 0, 44)
+topBar.BackgroundColor3 = Color3.fromRGB(32, 35, 44)
+topBar.BorderSizePixel = 0
+topBar.Parent = mainFrame
+
+local topCorner = Instance.new("UICorner")
+topCorner.CornerRadius = UDim.new(0, 12)
+topCorner.Parent = topBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(1, -56, 1, 0)
+titleLabel.Position = UDim2.new(0, 14, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Remawed10 universal pannel 📌"
+titleLabel.TextColor3 = Color3.fromRGB(245, 247, 250)
+titleLabel.TextSize = 15
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = topBar
+
+-- Minimize "-" button
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Name = "MinimizeButton"
+minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+minimizeBtn.Position = UDim2.new(1, -38, 0.5, -15)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(48, 52, 66)
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = Color3.fromRGB(245, 247, 250)
+minimizeBtn.TextSize = 20
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.BorderSizePixel = 0
+minimizeBtn.Parent = topBar
+
+local minCorner = Instance.new("UICorner")
+minCorner.CornerRadius = UDim.new(0, 8)
+minCorner.Parent = minimizeBtn
+
+-- Minimized circle with 東 icon
+local pinCircle = Instance.new("ImageButton")
+pinCircle.Name = "PinCircleButton"
+pinCircle.Size = UDim2.new(0, 56, 0, 56)
+pinCircle.Position = mainFrame.Position
+pinCircle.BackgroundColor3 = Color3.fromRGB(28, 31, 40)
+pinCircle.BorderSizePixel = 0
+pinCircle.Visible = false
+pinCircle.Active = true
+pinCircle.Draggable = true
+pinCircle.Image = ""
+pinCircle.Parent = screenGui
+
+local circleCorner = Instance.new("UICorner")
+circleCorner.CornerRadius = UDim.new(1, 0)
+circleCorner.Parent = pinCircle
+
+local circleStroke = Instance.new("UIStroke")
+circleStroke.Color = Color3.fromRGB(95, 130, 255)
+circleStroke.Thickness = 2
+circleStroke.Parent = pinCircle
+
+local pinIconLabel = Instance.new("TextLabel")
+pinIconLabel.Size = UDim2.new(1, 0, 1, 0)
+pinIconLabel.BackgroundTransparency = 1
+pinIconLabel.Text = "📌"
+pinIconLabel.TextSize = 26
+pinIconLabel.Font = Enum.Font.GothamBold
+pinIconLabel.Parent = pinCircle
+
+-- Scrollable container for separate features
+local contentFrame = Instance.new("ScrollingFrame")
+contentFrame.Name = "Content"
+contentFrame.Size = UDim2.new(1, -24, 1, -56)
+contentFrame.Position = UDim2.new(0, 12, 0, 50)
+contentFrame.BackgroundTransparency = 1
+contentFrame.BorderSizePixel = 0
+contentFrame.ScrollBarThickness = 5
+contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+contentFrame.Parent = mainFrame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0, 8)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Parent = contentFrame
+
+-- State and setter registry
+local toggleSetters = {}
+local toggleStates = {}
+
+local function createSectionHeader(headerText, orderIndex)
+	local header = Instance.new("TextLabel")
+	header.Name = "Header_" .. tostring(orderIndex)
+	header.Size = UDim2.new(1, 0, 0, 24)
+	header.BackgroundTransparency = 1
+	header.Text = headerText
+	header.TextColor3 = Color3.fromRGB(145, 165, 225)
+	header.TextSize = 12
+	header.Font = Enum.Font.GothamBold
+	header.TextXAlignment = Enum.TextXAlignment.Left
+	header.LayoutOrder = orderIndex
+	header.Parent = contentFrame
+end
+
+local function createToggle(labelText, orderIndex, callback)
+	local state = false
+	toggleStates[labelText] = false
+
+	local row = Instance.new("Frame")
+	row.Name = labelText:gsub("%s+", "_") .. "_Row"
+	row.Size = UDim2.new(1, 0, 0, 42)
+	row.BackgroundColor3 = Color3.fromRGB(34, 38, 48)
+	row.BorderSizePixel = 0
+	row.LayoutOrder = orderIndex
+	row.Parent = contentFrame
+
+	local rowCorner = Instance.new("UICorner")
+	rowCorner.CornerRadius = UDim.new(0, 8)
+	rowCorner.Parent = row
+
+	local rowStroke = Instance.new("UIStroke")
+	rowStroke.Color = Color3.fromRGB(55, 60, 76)
+	rowStroke.Thickness = 1
+	rowStroke.Parent = row
+
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(1, -96, 1, 0)
+	textLabel.Position = UDim2.new(0, 14, 0, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.Text = labelText
+	textLabel.TextColor3 = Color3.fromRGB(235, 238, 245)
+	textLabel.TextSize = 13
+	textLabel.Font = Enum.Font.GothamSemibold
+	textLabel.TextXAlignment = Enum.TextXAlignment.Left
+	textLabel.Parent = row
+
+	local toggleBtn = Instance.new("TextButton")
+	toggleBtn.Name = "ToggleButton"
+	toggleBtn.AutoLocalize = false
+	toggleBtn.Size = UDim2.new(0, 70, 0, 28)
+	toggleBtn.Position = UDim2.new(1, -80, 0.5, -14)
+	toggleBtn.BackgroundColor3 = Color3.fromRGB(165, 55, 65)
+	toggleBtn.Text = "OFF"
+	toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	toggleBtn.TextSize = 12
+	toggleBtn.Font = Enum.Font.GothamBold
+	toggleBtn.BorderSizePixel = 0
+	toggleBtn.Parent = row
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	btnCorner.Parent = toggleBtn
+
+	local function refreshVisual()
+		if state then
+			toggleBtn.Text = "ON"
+			toggleBtn.BackgroundColor3 = Color3.fromRGB(45, 165, 95)
+		else
+			toggleBtn.Text = "OFF"
+			toggleBtn.BackgroundColor3 = Color3.fromRGB(165, 55, 65)
+		end
+	end
+
+	local function setToggleState(newState, runCallback)
+		if state == newState then return end
+		state = newState
+		toggleStates[labelText] = state
+		refreshVisual()
+		if runCallback then
+			callback(state)
+		end
+	end
+
+	toggleSetters[labelText] = setToggleState
+
+	toggleBtn.MouseButton1Click:Connect(function()
+		setToggleState(not state, true)
+	end)
+end
+
+local function createActionButtonRow(labelText, buttonText, orderIndex, callback)
+	local row = Instance.new("Frame")
+	row.Name = labelText:gsub("%s+", "_") .. "_Row"
+	row.Size = UDim2.new(1, 0, 0, 42)
+	row.BackgroundColor3 = Color3.fromRGB(34, 38, 48)
+	row.BorderSizePixel = 0
+	row.LayoutOrder = orderIndex
+	row.Parent = contentFrame
+
+	local rowCorner = Instance.new("UICorner")
+	rowCorner.CornerRadius = UDim.new(0, 8)
+	rowCorner.Parent = row
+
+	local rowStroke = Instance.new("UIStroke")
+	rowStroke.Color = Color3.fromRGB(55, 60, 76)
+	rowStroke.Thickness = 1
+	rowStroke.Parent = row
+
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(1, -116, 1, 0)
+	textLabel.Position = UDim2.new(0, 14, 0, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.Text = labelText
+	textLabel.TextColor3 = Color3.fromRGB(235, 238, 245)
+	textLabel.TextSize = 13
+	textLabel.Font = Enum.Font.GothamSemibold
+	textLabel.TextXAlignment = Enum.TextXAlignment.Left
+	textLabel.Parent = row
+
+	local actionBtn = Instance.new("TextButton")
+	actionBtn.Name = "ActionButton"
+	actionBtn.Size = UDim2.new(0, 90, 0, 28)
+	actionBtn.Position = UDim2.new(1, -100, 0.5, -14)
+	actionBtn.BackgroundColor3 = Color3.fromRGB(72, 92, 165)
+	actionBtn.Text = buttonText
+	actionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	actionBtn.TextSize = 12
+	actionBtn.Font = Enum.Font.GothamBold
+	actionBtn.BorderSizePixel = 0
+	actionBtn.Parent = row
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 6)
+	btnCorner.Parent = actionBtn
+
+	actionBtn.MouseButton1Click:Connect(function()
+		callback(actionBtn)
+	end)
+
+	return actionBtn
+end
+
+-- ==================== AVATAR & CHARACTER HELPERS ====================
+local function getCharacterParts()
+	local char = localPlayer.Character
+	if not char then return nil, nil, nil end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local root = char:FindFirstChild("HumanoidRootPart")
+	return char, hum, root
+end
+
+local function getTrueGameSpawnCFrame()
+	local spawnLocations = {}
+	for _, obj in ipairs(Workspace:GetDescendants()) do
+		if obj:IsA("SpawnLocation") then
+			table.insert(spawnLocations, obj)
+		end
+	end
+
+	local chosenSpawn = nil
+	if #spawnLocations > 0 then
+		if localPlayer.Team then
+			for _, sp in ipairs(spawnLocations) do
+				if not sp.Neutral and sp.TeamColor == localPlayer.TeamColor then
+					chosenSpawn = sp
+					break
+				end
+			end
+		end
+		if not chosenSpawn then
+			for _, sp in ipairs(spawnLocations) do
+				if sp.Neutral then
+					chosenSpawn = sp
+					break
+				end
+			end
+		end
+		if not chosenSpawn then
+			chosenSpawn = spawnLocations[1]
+		end
+	end
+
+	if chosenSpawn then
+		local yOffset = (chosenSpawn.Size.Y * 0.5) + 3.2
+		return chosenSpawn.CFrame * CFrame.new(0, yOffset, 0)
+	end
+
+	return CFrame.new(0, 5, 0)
+end
+
+-- ==================== CLICK TELEPORT TOOL ====================
+local hasClickTeleportTool = false
+
+local function getClickWorldPosition()
+	local camera = Workspace.CurrentCamera
+	if not camera then return nil end
+
+	local pointerPos = UserInputService:GetMouseLocation()
+	local ray = camera:ViewportPointToRay(pointerPos.X, pointerPos.Y)
+
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+	local excludeList = {}
+	if localPlayer.Character then
+		table.insert(excludeList, localPlayer.Character)
+	end
+	rayParams.FilterDescendantsInstances = excludeList
+
+	local result = Workspace:Raycast(ray.Origin, ray.Direction * 2500, rayParams)
+	if result then
+		return result.Position
+	end
+
+	return nil
+end
+
+local function createClickTeleportTool()
+	local tool = Instance.new("Tool")
+	tool.Name = "Click Teleport"
+	tool.RequiresHandle = false
+	tool.CanBeDropped = true
+	tool.ToolTip = "Equip and click on a part to teleport"
+
+	local isEquipped = false
+
+	tool.Equipped:Connect(function()
+		isEquipped = true
+	end)
+
+	tool.Unequipped:Connect(function()
+		isEquipped = false
+	end)
+
+	tool.Activated:Connect(function()
+		if not isEquipped or tool.Parent ~= localPlayer.Character then
+			return
+		end
+
+		local char, hum, root = getCharacterParts()
+		if not char or not root then return end
+
+		local hitPos = getClickWorldPosition()
+		if not hitPos then return end
+
+		if hum and hum.Sit then
+			hum.Sit = false
+		end
+
+		local targetPos = hitPos + Vector3.new(0, 3.2, 0)
+		local lookVector = root.CFrame.LookVector
+		local flatLook = Vector3.new(lookVector.X, 0, lookVector.Z)
+		if flatLook.Magnitude < 0.01 then
+			flatLook = Vector3.new(0, 0, -1)
+		else
+			flatLook = flatLook.Unit
+		end
+
+		root.AssemblyLinearVelocity = Vector3.zero
+		root.AssemblyAngularVelocity = Vector3.zero
+		char:PivotTo(CFrame.lookAt(targetPos, targetPos + flatLook))
+	end)
+
+	return tool
+end
+
+local function giveClickTeleportToolToBackpack()
+	local backpack = localPlayer:FindFirstChildOfClass("Backpack")
+	if not backpack then
+		backpack = localPlayer:WaitForChild("Backpack", 10)
+	end
+	if not backpack then return false end
+
+	local char = localPlayer.Character
+	if char and char:FindFirstChild("Click Teleport") then
+		return true
+	end
+	if backpack:FindFirstChild("Click Teleport") then
+		return true
+	end
+
+	local tool = createClickTeleportTool()
+	tool.Parent = backpack
+	return true
+end
+
+local noclipConn = nil
+local jumpConn = nil
+local antiSitConn = nil
+local antiSwimConn = nil
+local swimConn = nil
+local speedConn = nil
+local skipScaleConn = nil
+local lastSkipTime = 0
+
+local defaultWalkSpeed = 16
+local defaultJumpPower = 50
+local customWalkSpeed = 16
+local customJumpPower = 50
+local hasCustomWalkSpeed = false
+local hasCustomJumpPower = false
+local syncingInputs = false
+
+local walkSpeedBox = nil
+local jumpPowerBox = nil
+
+local function syncCharacterInputs(hum)
+	if not hum then return end
+	syncingInputs = true
+	if walkSpeedBox then
+		walkSpeedBox.Text = tostring(math.floor(hum.WalkSpeed * 100) / 100)
+	end
+	if jumpPowerBox then
+		local jp = hum.UseJumpPower and hum.JumpPower or defaultJumpPower
+		jumpPowerBox.Text = tostring(math.floor(jp * 100) / 100)
+	end
+	syncingInputs = false
+end
+
+local function applyCustomStatsToHumanoid(hum)
+	if not hum then return end
+	if toggleStates["6. SPEED 100"] then
+		if hum.WalkSpeed ~= 100 then
+			hum.WalkSpeed = 100
+		end
+	elseif hasCustomWalkSpeed and hum.WalkSpeed ~= customWalkSpeed then
+		hum.WalkSpeed = customWalkSpeed
+	end
+
+	if hasCustomJumpPower then
+		if not hum.UseJumpPower then
+			hum.UseJumpPower = true
+		end
+		if hum.JumpPower ~= customJumpPower then
+			hum.JumpPower = customJumpPower
+		end
+	end
+end
+
+RunService.Heartbeat:Connect(function()
+	local _, hum = getCharacterParts()
+	if hum then
+		applyCustomStatsToHumanoid(hum)
+	end
+end)
+
+local function setCharacterCanCollide(canCollide)
+	local char = localPlayer.Character
+	if char then
+		for _, p in ipairs(char:GetDescendants()) do
+			if p:IsA("BasePart") then
+				p.CanCollide = canCollide
+			end
+		end
+	end
+end
+
+local function applyAntiSit(hum)
+	if not hum then return end
+	hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+	hum.Sit = false
+	if hum:GetState() == Enum.HumanoidStateType.Seated then
+		hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+	end
+end
+
+local function restoreSit(hum)
+	if not hum then return end
+	hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
+end
+
+local function applyAntiSwim(hum)
+	if not hum then return end
+	hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+	hum.Swimming = false
+	if hum:GetState() == Enum.HumanoidStateType.Swimming then
+		hum:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+	end
+end
+
+local function restoreSwim(hum)
+	if not hum then return end
+	hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+end
+
+local function applyForcedSwim(hum)
+	if not hum then return end
+	hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+	if hum:GetState() ~= Enum.HumanoidStateType.Swimming then
+		hum:ChangeState(Enum.HumanoidStateType.Swimming)
+	end
+end
+
+local function applySpeed100()
+	local _, hum = getCharacterParts()
+	if hum and hum.WalkSpeed ~= 100 then
+		hum.WalkSpeed = 100
+	end
+end
+
+local function findLadderTopPosition(char, root)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { char }
+
+	local origin = root.Position
+	local lookDir = root.CFrame.LookVector
+
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Exclude
+	overlapParams.FilterDescendantsInstances = { char }
+
+	local nearbyParts = Workspace:GetPartBoundsInRadius(origin, 6, overlapParams)
+	for _, part in ipairs(nearbyParts) do
+		if part:IsA("BasePart") then
+			local lowerName = string.lower(part.Name)
+			local isLadderLike = part:IsA("TrussPart")
+				or string.find(lowerName, "ladder", 1, true) ~= nil
+				or string.find(lowerName, "scale", 1, true) ~= nil
+
+			if isLadderLike then
+				local topY = part.Position.Y + (part.Size.Y * 0.5) + 3.5
+				return Vector3.new(part.Position.X, topY, part.Position.Z) + (lookDir * 2.5)
+			end
+		end
+	end
+
+	local upRay = Workspace:Raycast(origin + lookDir * 1.5, Vector3.new(0, 25, 0), params)
+	if upRay then
+		return upRay.Position + Vector3.new(0, 3, 0) + (lookDir * 2)
+	end
+
+	return origin + Vector3.new(0, 12, 0) + (lookDir * 4)
+end
+
+local function trySkipLadder()
+	local now = os.clock()
+	if now - lastSkipTime < 0.35 then return end
+
+	local char, hum, root = getCharacterParts()
+	if not char or not hum or not root then return end
+
+	local isClimbing = (hum:GetState() == Enum.HumanoidStateType.Climbing)
+	local isMovingForward = hum.MoveDirection.Magnitude > 0.1
+
+	if isClimbing and isMovingForward then
+		lastSkipTime = now
+		local targetPos = findLadderTopPosition(char, root)
+		root.AssemblyLinearVelocity = Vector3.zero
+		root.CFrame = CFrame.new(targetPos, targetPos + root.CFrame.LookVector)
+		hum:ChangeState(Enum.HumanoidStateType.Running)
+	end
+end
+
+-- ==================== VISUAL HELPERS ====================
+local GREEN_COLOR = Color3.fromRGB(0, 255, 85)
+
+local function createGreenBodyHighlight(character, name)
+	local highlight = Instance.new("Highlight")
+	highlight.Name = name
+	highlight.Adornee = character
+	highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	highlight.FillColor = GREEN_COLOR
+	highlight.FillTransparency = 0.35
+	highlight.OutlineColor = GREEN_COLOR
+	highlight.OutlineTransparency = 0
+	highlight.Parent = character
+	return highlight
+end
+
+local XRAY_TRANSPARENCY = 0.5
+local originalPartsTransparency = {}
+local descendantAddedConn = nil
+
+local function isCharacterPart(part)
+	local model = part:FindFirstAncestorOfClass("Model")
+	return model and model:FindFirstChildOfClass("Humanoid") ~= nil
+end
+
+local function applyXrayToPart(part)
+	if not part:IsA("BasePart") then return end
+	if isCharacterPart(part) then return end
+
+	if originalPartsTransparency[part] == nil then
+		originalPartsTransparency[part] = part.Transparency
+	end
+
+	part.Transparency = math.max(originalPartsTransparency[part], XRAY_TRANSPARENCY)
+end
+
+local espHighlights = {}
+local playerAddedConn = nil
+local playerRemovingConn = nil
+local characterConnections = {}
+
+local function clearPlayerEsp(targetPlayer)
+	if characterConnections[targetPlayer] then
+		characterConnections[targetPlayer]:Disconnect()
+		characterConnections[targetPlayer] = nil
+	end
+
+	local hl = espHighlights[targetPlayer]
+	if hl then
+		hl:Destroy()
+		espHighlights[targetPlayer] = nil
+	end
+end
+
+local function attachHighlightToCharacter(targetPlayer, character)
+	if not toggleStates["9. ESP Players"] or targetPlayer == localPlayer then return end
+	if not character then return end
+
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if not humanoid then return end
+
+	if espHighlights[targetPlayer] then
+		espHighlights[targetPlayer]:Destroy()
+	end
+
+	espHighlights[targetPlayer] = createGreenBodyHighlight(character, "Remawed10_ESP")
+end
+
+local function setupPlayerEsp(targetPlayer)
+	if targetPlayer == localPlayer then return end
+
+	if targetPlayer.Character then
+		attachHighlightToCharacter(targetPlayer, targetPlayer.Character)
+	end
+
+	characterConnections[targetPlayer] = targetPlayer.CharacterAdded:Connect(function(char)
+		if toggleStates["9. ESP Players"] then
+			attachHighlightToCharacter(targetPlayer, char)
+		end
+	end)
+end
+
+local ultraEspEntries = {}
+local localAttachment = nil
+local localCharConn = nil
+local ultraPlayerAddedConn = nil
+local ultraPlayerRemovingConn = nil
+
+local function getHumanoidAnchorPart(character)
+	if not character then return nil end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid and humanoid.RootPart then
+		return humanoid.RootPart
+	end
+	return character:FindFirstChild("HumanoidRootPart")
+		or character:FindFirstChild("UpperTorso")
+		or character:FindFirstChild("Torso")
+		or character:FindFirstChildWhichIsA("BasePart")
+end
+
+local function ensureLocalAttachment()
+	if localAttachment then
+		localAttachment:Destroy()
+		localAttachment = nil
+	end
+
+	local char = localPlayer.Character
+	local anchor = getHumanoidAnchorPart(char)
+	if anchor then
+		local att = Instance.new("Attachment")
+		att.Name = "Remawed10_LocalLineAtt"
+		att.Parent = anchor
+		localAttachment = att
+	end
+
+	for _, entry in pairs(ultraEspEntries) do
+		if entry.beam then
+			entry.beam.Attachment0 = localAttachment
+			entry.beam.Enabled = (localAttachment ~= nil and entry.targetAttachment ~= nil)
+		end
+	end
+end
+
+local function clearUltraEspForPlayer(targetPlayer)
+	local entry = ultraEspEntries[targetPlayer]
+	if not entry then return end
+
+	if entry.charConn then
+		entry.charConn:Disconnect()
+	end
+	if entry.beam then
+		entry.beam:Destroy()
+	end
+	if entry.targetAttachment then
+		entry.targetAttachment:Destroy()
+	end
+	if entry.highlight then
+		entry.highlight:Destroy()
+	end
+
+	ultraEspEntries[targetPlayer] = nil
+end
+
+local function attachUltraEspToTarget(targetPlayer, character)
+	if not toggleStates["10. Ultra ESP Players"] or targetPlayer == localPlayer then return end
+
+	local entry = ultraEspEntries[targetPlayer]
+	if entry then
+		if entry.beam then entry.beam:Destroy() end
+		if entry.targetAttachment then entry.targetAttachment:Destroy() end
+		if entry.highlight then entry.highlight:Destroy() end
+	else
+		entry = {}
+		ultraEspEntries[targetPlayer] = entry
+	end
+
+	local humanoid = character and character:WaitForChild("Humanoid", 10)
+	local anchor = humanoid and getHumanoidAnchorPart(character)
+	if not anchor or not toggleStates["10. Ultra ESP Players"] then return end
+
+	entry.highlight = createGreenBodyHighlight(character, "Remawed10_UltraESPBody")
+
+	local targetAtt = Instance.new("Attachment")
+	targetAtt.Name = "Remawed10_TargetLineAtt"
+	targetAtt.Parent = anchor
+
+	local beam = Instance.new("Beam")
+	beam.Name = "Remawed10_UltraESPLine"
+	beam.Attachment0 = localAttachment
+	beam.Attachment1 = targetAtt
+	beam.Color = ColorSequence.new(GREEN_COLOR)
+	beam.LightEmission = 1
+	beam.LightInfluence = 0
+	beam.Transparency = NumberSequence.new(0)
+	beam.Width0 = 0.14
+	beam.Width1 = 0.14
+	beam.FaceCamera = true
+	beam.Enabled = (localAttachment ~= nil)
+	beam.Parent = anchor
+
+	entry.targetAttachment = targetAtt
+	entry.beam = beam
+end
+
+local function setupUltraEspForPlayer(targetPlayer)
+	if targetPlayer == localPlayer then return end
+
+	clearUltraEspForPlayer(targetPlayer)
+
+	local entry = {}
+	ultraEspEntries[targetPlayer] = entry
+
+	if targetPlayer.Character then
+		task.spawn(attachUltraEspToTarget, targetPlayer, targetPlayer.Character)
+	end
+
+	entry.charConn = targetPlayer.CharacterAdded:Connect(function(char)
+		if toggleStates["10. Ultra ESP Players"] then
+			attachUltraEspToTarget(targetPlayer, char)
+		end
+	end)
+end
+
+-- ==================== AVATAR SETTINGS ====================
+createSectionHeader("AVATAR SETTINGS", 1)
+
+createToggle("1. NOCLIP", 2, function(state)
+	if state then
+		if noclipConn then noclipConn:Disconnect() end
+		noclipConn = RunService.Stepped:Connect(function()
+			setCharacterCanCollide(false)
+		end)
+	else
+		if noclipConn then
+			noclipConn:Disconnect()
+			noclipConn = nil
+		end
+		setCharacterCanCollide(true)
+	end
+end)
+
+createToggle("2. FLY JUMP", 3, function(state)
+	if state then
+		if jumpConn then jumpConn:Disconnect() end
+		jumpConn = UserInputService.JumpRequest:Connect(function()
+			local _, hum = getCharacterParts()
+			if hum then
+				hum:ChangeState(Enum.HumanoidStateType.Jumping)
+			end
+		end)
+	else
+		if jumpConn then
+			jumpConn:Disconnect()
+			jumpConn = nil
+		end
+	end
+end)
+
+createToggle("3. ANTI-SIT", 4, function(state)
+	if state then
+		local _, hum = getCharacterParts()
+		applyAntiSit(hum)
+		if antiSitConn then antiSitConn:Disconnect() end
+		antiSitConn = RunService.Heartbeat:Connect(function()
+			local _, currentHum = getCharacterParts()
+			applyAntiSit(currentHum)
+		end)
+	else
+		if antiSitConn then
+			antiSitConn:Disconnect()
+			antiSitConn = nil
+		end
+		local _, hum = getCharacterParts()
+		restoreSit(hum)
+	end
+end)
+
+createToggle("4. ANTI-SWIM", 5, function(state)
+	if state then
+		if toggleSetters["5. SWIM"] then
+			toggleSetters["5. SWIM"](false, true)
+		end
+		if swimConn then
+			swimConn:Disconnect()
+			swimConn = nil
+		end
+		local _, hum = getCharacterParts()
+		applyAntiSwim(hum)
+		if antiSwimConn then antiSwimConn:Disconnect() end
+		antiSwimConn = RunService.Heartbeat:Connect(function()
+			local _, currentHum = getCharacterParts()
+			applyAntiSwim(currentHum)
+		end)
+	else
+		if antiSwimConn then
+			antiSwimConn:Disconnect()
+			antiSwimConn = nil
+		end
+		local _, hum = getCharacterParts()
+		restoreSwim(hum)
+	end
+end)
+
+createToggle("5. SWIM", 6, function(state)
+	if state then
+		if toggleSetters["4. ANTI-SWIM"] then
+			toggleSetters["4. ANTI-SWIM"](false, true)
+		end
+		if antiSwimConn then
+			antiSwimConn:Disconnect()
+			antiSwimConn = nil
+		end
+		local _, hum = getCharacterParts()
+		applyForcedSwim(hum)
+		if swimConn then swimConn:Disconnect() end
+		swimConn = RunService.Heartbeat:Connect(function()
+			local _, currentHum = getCharacterParts()
+			applyForcedSwim(currentHum)
+		end)
+	else
+		if swimConn then
+			swimConn:Disconnect()
+			swimConn = nil
+		end
+		local _, hum = getCharacterParts()
+		restoreSwim(hum)
+	end
+end)
+
+createToggle("6. SPEED 100", 7, function(state)
+	if state then
+		applySpeed100()
+		if speedConn then speedConn:Disconnect() end
+		speedConn = RunService.Heartbeat:Connect(function()
+			applySpeed100()
+		end)
+	else
+		if speedConn then
+			speedConn:Disconnect()
+			speedConn = nil
+		end
+		local _, hum = getCharacterParts()
+		if hum then
+			hum.WalkSpeed = hasCustomWalkSpeed and customWalkSpeed or defaultWalkSpeed
+		end
+	end
+end)
+
+createToggle("7. SKIP SCALE", 8, function(state)
+	if state then
+		if skipScaleConn then skipScaleConn:Disconnect() end
+		skipScaleConn = RunService.Heartbeat:Connect(function()
+			trySkipLadder()
+		end)
+	else
+		if skipScaleConn then
+			skipScaleConn:Disconnect()
+			skipScaleConn = nil
+		end
+	end
+end)
+
+-- ==================== VISUAL SETTINGS ====================
+createSectionHeader("VISUAL SETTINGS", 9)
+
+createToggle("8. X-Ray", 10, function(state)
+	if state then
+		for _, obj in ipairs(Workspace:GetDescendants()) do
+			applyXrayToPart(obj)
+		end
+
+		descendantAddedConn = Workspace.DescendantAdded:Connect(function(obj)
+			if toggleStates["8. X-Ray"] then
+				task.wait()
+				applyXrayToPart(obj)
+			end
+		end)
+	else
+		if descendantAddedConn then
+			descendantAddedConn:Disconnect()
+			descendantAddedConn = nil
+		end
+
+		for part, origTransparency in pairs(originalPartsTransparency) do
+			if part and part.Parent then
+				part.Transparency = origTransparency
+			end
+		end
+		table.clear(originalPartsTransparency)
+	end
+end)
+
+createToggle("9. ESP Players", 11, function(state)
+	if state then
+		for _, plr in ipairs(Players:GetPlayers()) do
+			setupPlayerEsp(plr)
+		end
+
+		playerAddedConn = Players.PlayerAdded:Connect(function(plr)
+			if toggleStates["9. ESP Players"] then
+				setupPlayerEsp(plr)
+			end
+		end)
+
+		playerRemovingConn = Players.PlayerRemoving:Connect(function(plr)
+			clearPlayerEsp(plr)
+		end)
+	else
+		if playerAddedConn then
+			playerAddedConn:Disconnect()
+			playerAddedConn = nil
+		end
+		if playerRemovingConn then
+			playerRemovingConn:Disconnect()
+			playerRemovingConn = nil
+		end
+
+		for plr in pairs(espHighlights) do
+			clearPlayerEsp(plr)
+		end
+		for plr in pairs(characterConnections) do
+			clearPlayerEsp(plr)
+		end
+	end
+end)
+
+createToggle("10. Ultra ESP Players", 12, function(state)
+	if state then
+		ensureLocalAttachment()
+
+		if localCharConn then
+			localCharConn:Disconnect()
+		end
+		localCharConn = localPlayer.CharacterAdded:Connect(function()
+			if toggleStates["10. Ultra ESP Players"] then
+				task.wait(0.2)
+				ensureLocalAttachment()
+			end
+		end)
+
+		for _, plr in ipairs(Players:GetPlayers()) do
+			setupUltraEspForPlayer(plr)
+		end
+
+		ultraPlayerAddedConn = Players.PlayerAdded:Connect(function(plr)
+			if toggleStates["10. Ultra ESP Players"] then
+				setupUltraEspForPlayer(plr)
+			end
+		end)
+
+		ultraPlayerRemovingConn = Players.PlayerRemoving:Connect(function(plr)
+			clearUltraEspForPlayer(plr)
+		end)
+	else
+		if localCharConn then
+			localCharConn:Disconnect()
+			localCharConn = nil
+		end
+		if ultraPlayerAddedConn then
+			ultraPlayerAddedConn:Disconnect()
+			ultraPlayerAddedConn = nil
+		end
+		if ultraPlayerRemovingConn then
+			ultraPlayerRemovingConn:Disconnect()
+			ultraPlayerRemovingConn = nil
+		end
+
+		for plr in pairs(ultraEspEntries) do
+			clearUltraEspForPlayer(plr)
+		end
+
+		if localAttachment then
+			localAttachment:Destroy()
+			localAttachment = nil
+		end
+	end
+end)
+
+-- ==================== OTHER ====================
+createSectionHeader("OTHER", 13)
+
+createActionButtonRow("11. Teleport to Spawn", "Teleport", 14, function(btn)
+	local char, hum, root = getCharacterParts()
+	if not char or not root then return end
+
+	local targetCFrame = getTrueGameSpawnCFrame()
+	if hum and hum.Sit then
+		hum.Sit = false
+	end
+	root.AssemblyLinearVelocity = Vector3.zero
+	root.AssemblyAngularVelocity = Vector3.zero
+	char:PivotTo(targetCFrame)
+
+	btn.Text = "Done!"
+	btn.BackgroundColor3 = Color3.fromRGB(45, 165, 95)
+	task.delay(0.6, function()
+		if btn and btn.Parent then
+			btn.Text = "Teleport"
+			btn.BackgroundColor3 = Color3.fromRGB(72, 92, 165)
+		end
+	end)
+end)
+
+createActionButtonRow("12. Give Click Teleport Tool", "Give", 15, function(btn)
+	local given = giveClickTeleportToolToBackpack()
+	if given then
+		hasClickTeleportTool = true
+		btn.Text = "Given!"
+		btn.BackgroundColor3 = Color3.fromRGB(45, 165, 95)
+		task.delay(0.6, function()
+			if btn and btn.Parent then
+				btn.Text = "Give"
+				btn.BackgroundColor3 = Color3.fromRGB(72, 92, 165)
+			end
+		end)
+	end
+end)
+
+-- ==================== CHARACTER SETTINGS ====================
+createSectionHeader("CHARACTER SETTINGS", 16)
+
+local function createLiveStatRow(labelText, placeholderText, orderIndex, onValidLiveInput)
+	local row = Instance.new("Frame")
+	row.Name = labelText:gsub("%s+", "_") .. "_Row"
+	row.Size = UDim2.new(1, 0, 0, 42)
+	row.BackgroundColor3 = Color3.fromRGB(34, 38, 48)
+	row.BorderSizePixel = 0
+	row.LayoutOrder = orderIndex
+	row.Parent = contentFrame
+
+	local rowCorner = Instance.new("UICorner")
+	rowCorner.CornerRadius = UDim.new(0, 8)
+	rowCorner.Parent = row
+
+	local rowStroke = Instance.new("UIStroke")
+	rowStroke.Color = Color3.fromRGB(55, 60, 76)
+	rowStroke.Thickness = 1
+	rowStroke.Parent = row
+
+	local textLabel = Instance.new("TextLabel")
+	textLabel.Size = UDim2.new(1, -130, 1, 0)
+	textLabel.Position = UDim2.new(0, 14, 0, 0)
+	textLabel.BackgroundTransparency = 1
+	textLabel.Text = labelText
+	textLabel.TextColor3 = Color3.fromRGB(235, 238, 245)
+	textLabel.TextSize = 13
+	textLabel.Font = Enum.Font.GothamSemibold
+	textLabel.TextXAlignment = Enum.TextXAlignment.Left
+	textLabel.Parent = row
+
+	local box = Instance.new("TextBox")
+	box.Name = "ValueBox"
+	box.Size = UDim2.new(0, 100, 0, 28)
+	box.Position = UDim2.new(1, -110, 0.5, -14)
+	box.BackgroundColor3 = Color3.fromRGB(22, 25, 33)
+	box.Text = placeholderText
+	box.PlaceholderText = placeholderText
+	box.ClearTextOnFocus = false
+	box.TextColor3 = Color3.fromRGB(255, 255, 255)
+	box.PlaceholderColor3 = Color3.fromRGB(130, 138, 156)
+	box.TextSize = 13
+	box.Font = Enum.Font.GothamBold
+	box.BorderSizePixel = 0
+	box.Parent = row
+
+	local boxCorner = Instance.new("UICorner")
+	boxCorner.CornerRadius = UDim.new(0, 6)
+	boxCorner.Parent = box
+
+	local boxStroke = Instance.new("UIStroke")
+	boxStroke.Color = Color3.fromRGB(85, 115, 215)
+	boxStroke.Thickness = 1
+	boxStroke.Parent = box
+
+	box:GetPropertyChangedSignal("Text"):Connect(function()
+		if syncingInputs then return end
+		local cleaned = box.Text:gsub(",", ".")
+		local num = tonumber(cleaned)
+		if num and num >= 0 then
+			onValidLiveInput(num)
+		end
+	end)
+
+	box.FocusLost:Connect(function()
+		local cleaned = box.Text:gsub(",", ".")
+		local num = tonumber(cleaned)
+		if not num or num < 0 then
+			local _, hum = getCharacterParts()
+			if hum then
+				syncCharacterInputs(hum)
+			end
+		end
+	end)
+
+	return box
+end
+
+walkSpeedBox = createLiveStatRow("WalkSpeed", "16", 17, function(newSpeed)
+	customWalkSpeed = newSpeed
+	hasCustomWalkSpeed = true
+	local _, hum = getCharacterParts()
+	if hum and not toggleStates["6. SPEED 100"] then
+		hum.WalkSpeed = customWalkSpeed
+	end
+end)
+
+jumpPowerBox = createLiveStatRow("JumpPower", "50", 18, function(newJump)
+	customJumpPower = newJump
+	hasCustomJumpPower = true
+	local _, hum = getCharacterParts()
+	if hum then
+		hum.UseJumpPower = true
+		hum.JumpPower = customJumpPower
+	end
+end)
+
+-- Reset button row
+local resetRow = Instance.new("Frame")
+resetRow.Name = "ResetStats_Row"
+resetRow.Size = UDim2.new(1, 0, 0, 42)
+resetRow.BackgroundColor3 = Color3.fromRGB(34, 38, 48)
+resetRow.BorderSizePixel = 0
+resetRow.LayoutOrder = 19
+resetRow.Parent = contentFrame
+
+local resetRowCorner = Instance.new("UICorner")
+resetRowCorner.CornerRadius = UDim.new(0, 8)
+resetRowCorner.Parent = resetRow
+
+local resetRowStroke = Instance.new("UIStroke")
+resetRowStroke.Color = Color3.fromRGB(55, 60, 76)
+resetRowStroke.Thickness = 1
+resetRowStroke.Parent = resetRow
+
+local resetBtn = Instance.new("TextButton")
+resetBtn.Name = "ResetButton"
+resetBtn.Size = UDim2.new(1, -20, 0, 28)
+resetBtn.Position = UDim2.new(0, 10, 0.5, -14)
+resetBtn.BackgroundColor3 = Color3.fromRGB(72, 92, 165)
+resetBtn.Text = "Reset"
+resetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+resetBtn.TextSize = 13
+resetBtn.Font = Enum.Font.GothamBold
+resetBtn.BorderSizePixel = 0
+resetBtn.Parent = resetRow
+
+local resetCorner = Instance.new("UICorner")
+resetCorner.CornerRadius = UDim.new(0, 6)
+resetCorner.Parent = resetBtn
+
+resetBtn.MouseButton1Click:Connect(function()
+	customWalkSpeed = defaultWalkSpeed
+	customJumpPower = defaultJumpPower
+	hasCustomWalkSpeed = false
+	hasCustomJumpPower = false
+
+	local _, hum = getCharacterParts()
+	if hum then
+		if not toggleStates["6. SPEED 100"] then
+			hum.WalkSpeed = defaultWalkSpeed
+		end
+		hum.UseJumpPower = true
+		hum.JumpPower = defaultJumpPower
+	end
+
+	syncingInputs = true
+	walkSpeedBox.Text = tostring(defaultWalkSpeed)
+	jumpPowerBox.Text = tostring(defaultJumpPower)
+	syncingInputs = false
+end)
+
+-- ==================== RESPAWN & MINIMIZE ====================
+local function captureDefaultsFromHumanoid(hum)
+	if not hum then return end
+	defaultWalkSpeed = hum.WalkSpeed
+	defaultJumpPower = hum.UseJumpPower and hum.JumpPower or 50
+	if not hasCustomWalkSpeed then
+		customWalkSpeed = defaultWalkSpeed
+	end
+	if not hasCustomJumpPower then
+		customJumpPower = defaultJumpPower
+	end
+	applyCustomStatsToHumanoid(hum)
+	syncCharacterInputs(hum)
+end
+
+if localPlayer.Character then
+	local hum = localPlayer.Character:FindFirstChildOfClass("Humanoid")
+	if hum then
+		captureDefaultsFromHumanoid(hum)
+	end
+end
+
+localPlayer.CharacterAdded:Connect(function(newChar)
+	local hum = newChar:WaitForChild("Humanoid")
+	task.wait(0.1)
+	captureDefaultsFromHumanoid(hum)
+
+	if hasClickTeleportTool then
+		giveClickTeleportToolToBackpack()
+	end
+
+	for name, isOn in pairs(toggleStates) do
+		if isOn and toggleSetters[name] then
+			local setter = toggleSetters[name]
+			setter(false, true)
+			setter(true, true)
+		end
+	end
+end)
+
+minimizeBtn.MouseButton1Click:Connect(function()
+	pinCircle.Position = mainFrame.Position
+	mainFrame.Visible = false
+	pinCircle.Visible = true
+end)
+
+pinCircle.MouseButton1Click:Connect(function()
+	mainFrame.Position = pinCircle.Position
+	pinCircle.Visible = false
+	mainFrame.Visible = true
+end)

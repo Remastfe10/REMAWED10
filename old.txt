@@ -1,0 +1,1971 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local TextChatService = game:GetService("TextChatService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+local GuiService = game:GetService("GuiService")
+local SoundService = game:GetService("SoundService")
+
+local player = Players.LocalPlayer
+
+-- Configurazione OLD GRAPHICS
+local STUD_TILE_SIZE = 1
+local PRIMARY_STUD_ASSET = "rbxassetid://18878365966"
+local cachedProceduralStudContent: string? = nil
+
+-- Configurazione NOOB CLASSICO (OLD AVATAR ALL)
+local NOOB_HEAD_COLOR = Color3.fromRGB(245, 205, 48)
+local NOOB_TORSO_COLOR = Color3.fromRGB(163, 162, 165)
+local NOOB_ARM_COLOR = Color3.fromRGB(245, 205, 48)
+local NOOB_LEG_COLOR = Color3.fromRGB(164, 189, 71)
+local NOOB_SMILE_FACE = "rbxassetid://7074786"
+
+-- Configurazione OLD JUMP SOUND
+local OLD_JUMP_SOUND_ID = "rbxassetid://129512638771628"
+
+-- Posa R15 stile R6 pulita e ferma (senza animazioni attive)
+local R15_STATIC_R6_OFFSETS: { [string]: CFrame } = {
+	["Root"] = CFrame.new(),
+	["Waist"] = CFrame.new(),
+	["Neck"] = CFrame.new(),
+	["LeftShoulder"] = CFrame.new(),
+	["LeftElbow"] = CFrame.new(),
+	["LeftWrist"] = CFrame.new(),
+	["RightShoulder"] = CFrame.new(),
+	["RightElbow"] = CFrame.new(),
+	["RightWrist"] = CFrame.new(),
+	["LeftHip"] = CFrame.new(),
+	["LeftKnee"] = CFrame.new(),
+	["LeftAnkle"] = CFrame.new(),
+	["RightHip"] = CFrame.new(),
+	["RightKnee"] = CFrame.new(),
+	["RightAnkle"] = CFrame.new(),
+}
+
+local RED = Color3.fromRGB(215, 30, 30)
+local WHITE = Color3.fromRGB(255, 255, 255)
+local GRAY_BTN = Color3.fromRGB(210, 210, 215)
+local GRAY_BTN_ACTIVE = Color3.fromRGB(165, 165, 175)
+local BORDER_COLOR = Color3.fromRGB(160, 160, 165)
+
+-- Colori stile barra classica e vecchio menu
+local TOPBAR_BG = Color3.fromRGB(68, 70, 74)
+local SLOT_BG = Color3.fromRGB(54, 56, 60)
+local SLOT_BORDER = Color3.fromRGB(145, 148, 152)
+local BUBBLE_BG = Color3.fromRGB(228, 228, 232)
+local BUBBLE_TEXT = Color3.fromRGB(70, 72, 76)
+local OLD_MENU_BAR = Color3.fromRGB(62, 68, 76)
+local OLD_MENU_ROW = Color3.fromRGB(78, 82, 88)
+local OLD_MENU_ACCENT_BLUE = Color3.fromRGB(0, 162, 255)
+
+-- Stati e token anti-race-condition
+local oldAvatarEnabled = false
+local oldGraphicsEnabled = false
+local oldGuiEnabled = false
+local oldAvatarAllEnabled = false
+local noAnimAllEnabled = false
+local oldJumpSoundEnabled = false
+
+local avatarToken = 0
+local graphicsToken = 0
+local guiToken = 0
+local avatarAllToken = 0
+local noAnimAllToken = 0
+local jumpSoundToken = 0
+
+local savedCFrame: CFrame? = nil
+local waitingToRestorePosition = false
+local avatarConnections: { RBXScriptConnection } = {}
+local graphicsConnections: { RBXScriptConnection } = {}
+local guiConnections: { RBXScriptConnection } = {}
+local avatarAllConnections: { RBXScriptConnection } = {}
+local noAnimAllConnections: { RBXScriptConnection } = {}
+local jumpSoundConnections: { RBXScriptConnection } = {}
+local appliedStuds: { Texture } = {}
+local activeBubbles: { Instance } = {}
+local savedAnimateTemplate: Instance? = nil
+local hiddenGuiObjects: { [GuiObject]: boolean } = {}
+local savedCoreGuiStates: { [Enum.CoreGuiType]: boolean } = {}
+local savedChatWindowEnabled: boolean? = nil
+local savedChatInputEnabled: boolean? = nil
+local savedBubbleChatEnabled: boolean? = nil
+
+local AVATAR_BIND_NAME = "OldAvatarR15Lock"
+
+type SavedPartState = {
+	Color: Color3,
+	Material: Enum.Material,
+	Transparency: number,
+}
+type SavedDecalState = {
+	Decal: Decal,
+	Texture: string,
+	Transparency: number,
+}
+type SavedClothingState = {
+	Instance: Instance,
+	Parent: Instance?,
+}
+type SavedCharacterAllState = {
+	Parts: { [BasePart]: SavedPartState },
+	Decals: { SavedDecalState },
+	Clothing: { SavedClothingState },
+	AddedFace: Decal?,
+}
+type SavedNoAnimState = {
+	DisabledScripts: { LocalScript | Script },
+	PoseConn: RBXScriptConnection?,
+}
+type SavedJumpSoundState = {
+	Sound: Sound,
+	SoundId: string,
+}
+
+local noobAllBackups: { [Model]: SavedCharacterAllState } = {}
+local noAnimAllBackups: { [Model]: SavedNoAnimState } = {}
+local jumpSoundBackups: { SavedJumpSoundState } = {}
+local lastJumpTriggerTime = 0
+
+local function clearConnections(list: { RBXScriptConnection })
+	for _, conn in ipairs(list) do
+		conn:Disconnect()
+	end
+	table.clear(list)
+end
+
+local function showNotification(title: string, text: string, duration: number?)
+	pcall(function()
+		StarterGui:SetCore("SendNotification", {
+			Title = title,
+			Text = text,
+			Duration = duration or 3,
+		})
+	end)
+end
+
+-- === FUNZIONE 1: OLD AVATAR (R15 RESPAWN + POSA STATICA SENZA ANIMAZIONI) ===
+
+local function cacheAnimateScript(character: Model)
+	if savedAnimateTemplate then
+		return
+	end
+	local animate = character:FindFirstChild("Animate")
+	if animate and (animate:IsA("LocalScript") or animate:IsA("Script")) then
+		savedAnimateTemplate = animate:Clone()
+	end
+end
+
+local function unbindAvatarLock()
+	pcall(function()
+		RunService:UnbindFromRenderStep(AVATAR_BIND_NAME)
+	end)
+end
+
+local function restoreAnimations(character: Model)
+	unbindAvatarLock()
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	for _, desc in ipairs(character:GetDescendants()) do
+		if desc:IsA("Motor6D") then
+			desc.Transform = CFrame.new()
+		end
+	end
+
+	if humanoid then
+		local animator = humanoid:FindFirstChildOfClass("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = humanoid
+		end
+	end
+
+	local currentAnimate = character:FindFirstChild("Animate")
+	if currentAnimate then
+		if currentAnimate:IsA("LocalScript") or currentAnimate:IsA("Script") then
+			currentAnimate.Enabled = true
+		end
+	elseif savedAnimateTemplate then
+		local restored = savedAnimateTemplate:Clone()
+		restored.Parent = character
+		if restored:IsA("LocalScript") or restored:IsA("Script") then
+			restored.Enabled = true
+		end
+	end
+end
+
+local function applyStaticR6Pose(character: Model, myToken: number)
+	clearConnections(avatarConnections)
+	unbindAvatarLock()
+	cacheAnimateScript(character)
+
+	local humanoid = character:FindFirstChild("Humanoid") :: Humanoid?
+	if not humanoid then
+		return
+	end
+
+	local function disableAnimateNow()
+		local animateScript = character:FindFirstChild("Animate")
+		if animateScript and (animateScript:IsA("LocalScript") or animateScript:IsA("Script")) then
+			animateScript.Enabled = false
+		end
+	end
+
+	disableAnimateNow()
+
+	table.insert(avatarConnections, character.ChildAdded:Connect(function(child)
+		if not oldAvatarEnabled or myToken ~= avatarToken then
+			return
+		end
+		if child.Name == "Animate" and (child:IsA("LocalScript") or child:IsA("Script")) then
+			child.Enabled = false
+		end
+	end))
+
+	local function stopAllTracks(animator: Animator?)
+		if not animator then
+			return
+		end
+		for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+			track:Stop(0)
+		end
+	end
+
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if animator then
+		stopAllTracks(animator)
+		table.insert(avatarConnections, animator.AnimationPlayed:Connect(function(track: AnimationTrack)
+			if not oldAvatarEnabled or myToken ~= avatarToken then
+				return
+			end
+			track:Stop(0)
+		end))
+	end
+
+	local motors: { Motor6D } = {}
+	for _, desc in ipairs(character:GetDescendants()) do
+		if desc:IsA("Motor6D") then
+			table.insert(motors, desc)
+		end
+	end
+
+	table.insert(avatarConnections, character.DescendantAdded:Connect(function(desc)
+		if not oldAvatarEnabled or myToken ~= avatarToken then
+			return
+		end
+		if desc:IsA("Motor6D") then
+			table.insert(motors, desc)
+		end
+	end))
+
+	RunService:BindToRenderStep(AVATAR_BIND_NAME, Enum.RenderPriority.Character.Value + 1, function()
+		if not oldAvatarEnabled or myToken ~= avatarToken or not character.Parent then
+			return
+		end
+
+		disableAnimateNow()
+
+		local curAnimator = humanoid:FindFirstChildOfClass("Animator")
+		stopAllTracks(curAnimator)
+
+		local isR15 = humanoid.RigType == Enum.HumanoidRigType.R15
+		for _, motor in ipairs(motors) do
+			if motor.Parent then
+				if isR15 then
+					motor.Transform = R15_STATIC_R6_OFFSETS[motor.Name] or CFrame.new()
+				else
+					motor.Transform = CFrame.new()
+				end
+			end
+		end
+	end)
+end
+
+local function activateOldAvatarFlow(myToken: number)
+	local character = player.Character
+	if not character then
+		return
+	end
+	cacheAnimateScript(character)
+
+	local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not root or not humanoid then
+		return
+	end
+
+	showNotification("OLD AVATAR", "Respawning into static R6 pose...", 2.5)
+	task.wait(1.2)
+
+	if not oldAvatarEnabled or myToken ~= avatarToken then
+		return
+	end
+
+	if character.Parent and root.Parent and humanoid.Health > 0 then
+		savedCFrame = root.CFrame
+		waitingToRestorePosition = true
+		humanoid.Health = 0
+	end
+end
+
+local function disableOldAvatar()
+	oldAvatarEnabled = false
+	avatarToken += 1
+	waitingToRestorePosition = false
+	savedCFrame = nil
+	clearConnections(avatarConnections)
+	unbindAvatarLock()
+	if player.Character then
+		restoreAnimations(player.Character)
+	end
+end
+
+-- === FUNZIONE 2: OLD GRAPHICS ===
+
+local ALL_FACES: { Enum.NormalId } = {
+	Enum.NormalId.Top,
+	Enum.NormalId.Bottom,
+	Enum.NormalId.Left,
+	Enum.NormalId.Right,
+	Enum.NormalId.Front,
+	Enum.NormalId.Back,
+}
+
+local function getProceduralStudTexture(): string?
+	if cachedProceduralStudContent then
+		return cachedProceduralStudContent
+	end
+
+	local ok, content = pcall(function()
+		local AssetService = game:GetService("AssetService")
+		if not AssetService or not AssetService.CreateEditableImage then
+			return nil
+		end
+
+		local size = 128
+		local half = size // 2
+		local img = AssetService:CreateEditableImage({ Size = Vector2.new(size, size) })
+		local bufferData = table.create(size * size * 4, 0)
+
+		local function writePixel(px: number, py: number, r: number, g: number, b: number, a: number)
+			local idx = ((py * size) + px) * 4 + 1
+			bufferData[idx] = math.clamp(r, 0, 1)
+			bufferData[idx + 1] = math.clamp(g, 0, 1)
+			bufferData[idx + 2] = math.clamp(b, 0, 1)
+			bufferData[idx + 3] = math.clamp(a, 0, 1)
+		end
+
+		for y = 0, size - 1 do
+			for x = 0, size - 1 do
+				writePixel(x, y, 0.56, 0.56, 0.56, 0.65)
+			end
+		end
+
+		for cellY = 0, 1 do
+			for cellX = 0, 1 do
+				local ox = cellX * half
+				local oy = cellY * half
+				local margin = 10
+				local studSize = half - margin * 2
+				local bevel = 5
+
+				for dy = 0, studSize - 1 do
+					for dx = 0, studSize - 1 do
+						local px = ox + margin + dx
+						local py = oy + margin + dy
+						if px >= 0 and px < size and py >= 0 and py < size then
+							local edgeDist = math.min(dx, dy, studSize - 1 - dx, studSize - 1 - dy)
+							local shade = 0.72
+							if edgeDist < bevel then
+								local t = edgeDist / bevel
+								local isHighlight = (dx < dy)
+								shade = isHighlight and (0.58 + 0.24 * t) or (0.34 + 0.30 * t)
+							else
+								shade = 0.76
+							end
+							writePixel(px, py, shade, shade, shade, 0.92)
+						end
+					end
+				end
+			end
+		end
+
+		img:WritePixels(Vector2.zero, Vector2.new(size, size), bufferData)
+		return img.ImageContent
+	end)
+
+	if ok and type(content) == "string" and content ~= "" then
+		cachedProceduralStudContent = content
+		return content
+	end
+
+	return nil
+end
+
+local function applyStudsToPart(part: BasePart, myToken: number)
+	if not oldGraphicsEnabled or myToken ~= graphicsToken or not part:IsA("BasePart") then
+		return
+	end
+	if part:FindFirstChild("ClassicStudApplied") then
+		return
+	end
+
+	local marker = Instance.new("BoolValue")
+	marker.Name = "ClassicStudApplied"
+	marker.Parent = part
+
+	local textureId = getProceduralStudTexture() or PRIMARY_STUD_ASSET
+
+	for _, face in ipairs(ALL_FACES) do
+		local tex = Instance.new("Texture")
+		tex.Name = "OldRobloxStud"
+		tex.Face = face
+		tex.Texture = textureId
+		tex.StudsPerTileU = STUD_TILE_SIZE
+		tex.StudsPerTileV = STUD_TILE_SIZE
+		tex.Transparency = 0.12
+		tex.ZIndex = 10
+		tex.Parent = part
+		table.insert(appliedStuds, tex)
+	end
+end
+
+local function applyStudsToContainer(container: Instance, myToken: number)
+	if not oldGraphicsEnabled or myToken ~= graphicsToken then
+		return
+	end
+	if container:IsA("BasePart") then
+		applyStudsToPart(container, myToken)
+	end
+	for _, desc in ipairs(container:GetDescendants()) do
+		if not oldGraphicsEnabled or myToken ~= graphicsToken then
+			return
+		end
+		if desc:IsA("BasePart") then
+			applyStudsToPart(desc, myToken)
+		end
+	end
+end
+
+local function disableOldGraphics()
+	oldGraphicsEnabled = false
+	graphicsToken += 1
+	clearConnections(graphicsConnections)
+
+	for _, tex in ipairs(appliedStuds) do
+		if tex and tex.Parent then
+			tex:Destroy()
+		end
+	end
+	table.clear(appliedStuds)
+
+	for _, desc in ipairs(Workspace:GetDescendants()) do
+		if desc.Name == "ClassicStudApplied" and desc:IsA("BoolValue") then
+			desc:Destroy()
+		elseif desc.Name == "OldRobloxStud" and desc:IsA("Texture") then
+			desc:Destroy()
+		end
+	end
+end
+
+local function enableOldGraphics()
+	disableOldGraphics()
+	oldGraphicsEnabled = true
+	local myToken = graphicsToken
+
+	task.spawn(function()
+		local count = 0
+		for _, desc in ipairs(Workspace:GetDescendants()) do
+			if not oldGraphicsEnabled or myToken ~= graphicsToken then
+				return
+			end
+			if desc:IsA("BasePart") then
+				applyStudsToPart(desc, myToken)
+				count += 1
+				if count % 250 == 0 then
+					RunService.Heartbeat:Wait()
+				end
+			end
+		end
+
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if not oldGraphicsEnabled or myToken ~= graphicsToken then
+				return
+			end
+			if plr.Character then
+				applyStudsToContainer(plr.Character, myToken)
+			end
+		end
+	end)
+
+	table.insert(graphicsConnections, Workspace.DescendantAdded:Connect(function(desc)
+		if not oldGraphicsEnabled or myToken ~= graphicsToken then
+			return
+		end
+		if desc:IsA("BasePart") then
+			applyStudsToPart(desc, myToken)
+		end
+	end))
+end
+
+-- === FUNZIONE 3: OLD GUI ===
+
+local CORE_GUI_TYPES: { Enum.CoreGuiType } = {
+	Enum.CoreGuiType.Chat,
+	Enum.CoreGuiType.PlayerList,
+	Enum.CoreGuiType.EmotesMenu,
+	Enum.CoreGuiType.Health,
+	Enum.CoreGuiType.Backpack,
+}
+
+local function sweepAndHideModernUis()
+	local playerGui = player:FindFirstChild("PlayerGui")
+	if not playerGui then
+		return
+	end
+
+	for _, gui in ipairs(playerGui:GetChildren()) do
+		if gui:IsA("ScreenGui") and gui.Name ~= "OldAvatarPanelGui" and gui.Name ~= "OldRobloxClassicGui" then
+			local lowerName = string.lower(gui.Name)
+			if string.find(lowerName, "chat", 1, true)
+				or string.find(lowerName, "topbar", 1, true)
+				or string.find(lowerName, "emote", 1, true)
+				or string.find(lowerName, "playerlist", 1, true)
+				or string.find(lowerName, "unibar", 1, true)
+			then
+				for _, child in ipairs(gui:GetChildren()) do
+					if child:IsA("GuiObject") and child.Visible then
+						if hiddenGuiObjects[child] == nil then
+							hiddenGuiObjects[child] = true
+						end
+						child.Visible = false
+					end
+				end
+			end
+		end
+	end
+end
+
+local function setModernGuiVisibility(hide: boolean)
+	if hide then
+		for _, coreType in ipairs(CORE_GUI_TYPES) do
+			pcall(function()
+				if savedCoreGuiStates[coreType] == nil then
+					savedCoreGuiStates[coreType] = StarterGui:GetCoreGuiEnabled(coreType)
+				end
+				StarterGui:SetCoreGuiEnabled(coreType, false)
+			end)
+		end
+
+		pcall(function()
+			local chatWindow = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
+			local chatInput = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
+			local bubbleChat = TextChatService:FindFirstChildOfClass("BubbleChatConfiguration")
+
+			if chatWindow and savedChatWindowEnabled == nil then
+				savedChatWindowEnabled = chatWindow.Enabled
+			end
+			if chatInput and savedChatInputEnabled == nil then
+				savedChatInputEnabled = chatInput.Enabled
+			end
+			if bubbleChat and savedBubbleChatEnabled == nil then
+				savedBubbleChatEnabled = bubbleChat.Enabled
+			end
+			if chatWindow then
+				chatWindow.Enabled = false
+			end
+			if chatInput then
+				chatInput.Enabled = false
+			end
+			if bubbleChat then
+				bubbleChat.Enabled = false
+			end
+		end)
+
+		sweepAndHideModernUis()
+	else
+		for coreType, prevState in pairs(savedCoreGuiStates) do
+			pcall(function()
+				StarterGui:SetCoreGuiEnabled(coreType, prevState)
+			end)
+		end
+		table.clear(savedCoreGuiStates)
+
+		pcall(function()
+			local chatWindow = TextChatService:FindFirstChildOfClass("ChatWindowConfiguration")
+			local chatInput = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
+			local bubbleChat = TextChatService:FindFirstChildOfClass("BubbleChatConfiguration")
+
+			if chatWindow and savedChatWindowEnabled ~= nil then
+				chatWindow.Enabled = savedChatWindowEnabled
+			end
+			if chatInput and savedChatInputEnabled ~= nil then
+				chatInput.Enabled = savedChatInputEnabled
+			end
+			if bubbleChat and savedBubbleChatEnabled ~= nil then
+				bubbleChat.Enabled = savedBubbleChatEnabled
+			end
+			savedChatWindowEnabled = nil
+			savedChatInputEnabled = nil
+			savedBubbleChatEnabled = nil
+		end)
+	end
+end
+
+local function showClassicBubbleAboveCharacter(targetCharacter: Model?, text: string, myToken: number)
+	if not oldGuiEnabled or myToken ~= guiToken or not targetCharacter then
+		return
+	end
+	local head = targetCharacter:FindFirstChild("Head") :: BasePart?
+	if not head then
+		return
+	end
+
+	local existing = head:FindFirstChild("OldClassicBubbleGui")
+	if existing then
+		existing:Destroy()
+	end
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "OldClassicBubbleGui"
+	billboard.Adornee = head
+	billboard.Size = UDim2.new(0, 220, 0, 44)
+	billboard.StudsOffset = Vector3.new(0, 2.3, 0)
+	billboard.AlwaysOnTop = false
+	billboard.MaxDistance = 75
+	billboard.Parent = head
+	table.insert(activeBubbles, billboard)
+
+	local box = Instance.new("Frame")
+	box.Size = UDim2.new(1, -12, 0, 32)
+	box.Position = UDim2.new(0.5, 0, 0, 8)
+	box.AnchorPoint = Vector2.new(0.5, 0)
+	box.BackgroundColor3 = BUBBLE_BG
+	box.BorderSizePixel = 0
+	box.Parent = billboard
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = box
+
+	local pointer = Instance.new("TextLabel")
+	pointer.Size = UDim2.new(0, 18, 0, 10)
+	pointer.Position = UDim2.new(0.5, 0, 1, -2)
+	pointer.AnchorPoint = Vector2.new(0.5, 0)
+	pointer.BackgroundTransparency = 1
+	pointer.Text = "▼"
+	pointer.TextColor3 = BUBBLE_BG
+	pointer.TextScaled = true
+	pointer.Font = Enum.Font.GothamBold
+	pointer.Parent = box
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -12, 1, -4)
+	label.Position = UDim2.new(0.5, 0, 0.5, 0)
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = BUBBLE_TEXT
+	label.TextScaled = true
+	label.Font = Enum.Font.SourceSansSemibold
+	label.Parent = box
+
+	task.delay(4.5, function()
+		if billboard and billboard.Parent then
+			billboard:Destroy()
+		end
+	end)
+end
+
+local function disableOldGui()
+	oldGuiEnabled = false
+	guiToken += 1
+	clearConnections(guiConnections)
+
+	for _, b in ipairs(activeBubbles) do
+		if b and b.Parent then
+			b:Destroy()
+		end
+	end
+	table.clear(activeBubbles)
+
+	local playerGui = player:FindFirstChild("PlayerGui")
+	if playerGui then
+		local oldGui = playerGui:FindFirstChild("OldRobloxClassicGui")
+		if oldGui then
+			oldGui:Destroy()
+		end
+
+		for guiObj, wasVisible in pairs(hiddenGuiObjects) do
+			if guiObj and guiObj.Parent and guiObj:IsA("GuiObject") then
+				guiObj.Visible = wasVisible
+			end
+		end
+	end
+	table.clear(hiddenGuiObjects)
+
+	setModernGuiVisibility(false)
+end
+
+local function enableOldGui()
+	disableOldGui()
+	oldGuiEnabled = true
+	local myToken = guiToken
+
+	setModernGuiVisibility(true)
+
+	local playerGui = player:WaitForChild("PlayerGui")
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "OldRobloxClassicGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.IgnoreGuiInset = true
+	screenGui.DisplayOrder = 150
+	screenGui.Parent = playerGui
+
+	local topCluster = Instance.new("Frame")
+	topCluster.Name = "ClassicTopLeftBar"
+	topCluster.Size = UDim2.new(0, 146, 0, 46)
+	topCluster.Position = UDim2.new(0, 10, 0, 58)
+	topCluster.BackgroundColor3 = TOPBAR_BG
+	topCluster.BorderColor3 = SLOT_BORDER
+	topCluster.BorderSizePixel = 1
+	topCluster.Parent = screenGui
+
+	local rMenuBtn = Instance.new("TextButton")
+	rMenuBtn.Name = "ClassicRMenuButton"
+	rMenuBtn.Size = UDim2.new(0, 38, 0, 38)
+	rMenuBtn.Position = UDim2.new(0, 4, 0, 4)
+	rMenuBtn.BackgroundColor3 = SLOT_BG
+	rMenuBtn.BorderColor3 = SLOT_BORDER
+	rMenuBtn.BorderSizePixel = 1
+	rMenuBtn.Text = "R"
+	rMenuBtn.TextColor3 = Color3.fromRGB(245, 235, 235)
+	rMenuBtn.TextScaled = true
+	rMenuBtn.Font = Enum.Font.GothamBlack
+	rMenuBtn.Parent = topCluster
+
+	local rGlowStroke = Instance.new("UIStroke")
+	rGlowStroke.Color = RED
+	rGlowStroke.Thickness = 1.5
+	rGlowStroke.Parent = rMenuBtn
+
+	local serverChatBtn = Instance.new("TextButton")
+	serverChatBtn.Name = "ServerChatIconButton"
+	serverChatBtn.Size = UDim2.new(0, 38, 0, 38)
+	serverChatBtn.Position = UDim2.new(0, 48, 0, 4)
+	serverChatBtn.BackgroundColor3 = SLOT_BG
+	serverChatBtn.BorderColor3 = SLOT_BORDER
+	serverChatBtn.BorderSizePixel = 1
+	serverChatBtn.Text = "💬"
+	serverChatBtn.TextColor3 = WHITE
+	serverChatBtn.TextScaled = true
+	serverChatBtn.Font = Enum.Font.GothamBold
+	serverChatBtn.Parent = topCluster
+
+	local inertDotsBtn = Instance.new("TextButton")
+	inertDotsBtn.Name = "InertDotsButton"
+	inertDotsBtn.Size = UDim2.new(0, 52, 0, 38)
+	inertDotsBtn.Position = UDim2.new(0, 90, 0, 4)
+	inertDotsBtn.BackgroundColor3 = SLOT_BG
+	inertDotsBtn.BorderColor3 = SLOT_BORDER
+	inertDotsBtn.BorderSizePixel = 1
+	inertDotsBtn.Text = "•••"
+	inertDotsBtn.TextColor3 = WHITE
+	inertDotsBtn.TextScaled = true
+	inertDotsBtn.Font = Enum.Font.GothamBold
+	inertDotsBtn.AutoButtonColor = false
+	inertDotsBtn.Active = false
+	inertDotsBtn.Parent = topCluster
+
+	local oldMenuOverlay = Instance.new("Frame")
+	oldMenuOverlay.Name = "OldRobloxFullMenu"
+	oldMenuOverlay.Size = UDim2.new(1, 0, 1, 0)
+	oldMenuOverlay.BackgroundColor3 = Color3.fromRGB(20, 22, 25)
+	oldMenuOverlay.BackgroundTransparency = 0.45
+	oldMenuOverlay.BorderSizePixel = 0
+	oldMenuOverlay.Visible = false
+	oldMenuOverlay.ZIndex = 200
+	oldMenuOverlay.Parent = screenGui
+
+	local menuCenterBox = Instance.new("Frame")
+	menuCenterBox.Size = UDim2.new(0, 560, 0, 210)
+	menuCenterBox.Position = UDim2.new(0.5, 0, 0.42, 0)
+	menuCenterBox.AnchorPoint = Vector2.new(0.5, 0.5)
+	menuCenterBox.BackgroundTransparency = 1
+	menuCenterBox.ZIndex = 201
+	menuCenterBox.Parent = oldMenuOverlay
+
+	local tabsBar = Instance.new("Frame")
+	tabsBar.Size = UDim2.new(1, 0, 0, 36)
+	tabsBar.BackgroundColor3 = OLD_MENU_BAR
+	tabsBar.BorderSizePixel = 0
+	tabsBar.ZIndex = 202
+	tabsBar.Parent = menuCenterBox
+
+	local activeTabUnderline = Instance.new("Frame")
+	activeTabUnderline.Size = UDim2.new(0.2, 0, 0, 3)
+	activeTabUnderline.Position = UDim2.new(0, 0, 1, -3)
+	activeTabUnderline.BackgroundColor3 = OLD_MENU_ACCENT_BLUE
+	activeTabUnderline.BorderSizePixel = 0
+	activeTabUnderline.ZIndex = 204
+	activeTabUnderline.Parent = tabsBar
+
+	local tabNames = { "People", "Settings", "Report", "Help", "Record" }
+	local tabButtons: { TextButton } = {}
+	local tabPages: { [string]: Frame } = {}
+
+	local contentArea = Instance.new("Frame")
+	contentArea.Size = UDim2.new(1, 0, 1, -44)
+	contentArea.Position = UDim2.new(0, 0, 0, 44)
+	contentArea.BackgroundTransparency = 1
+	contentArea.ZIndex = 202
+	contentArea.Parent = menuCenterBox
+
+	local peoplePage = Instance.new("Frame")
+	peoplePage.Size = UDim2.new(1, 0, 1, 0)
+	peoplePage.BackgroundTransparency = 1
+	peoplePage.Visible = true
+	peoplePage.ZIndex = 202
+	peoplePage.Parent = contentArea
+	tabPages["People"] = peoplePage
+
+	local inviteRow = Instance.new("TextButton")
+	inviteRow.Size = UDim2.new(1, 0, 0, 44)
+	inviteRow.BackgroundColor3 = OLD_MENU_ROW
+	inviteRow.BackgroundTransparency = 0.25
+	inviteRow.BorderSizePixel = 0
+	inviteRow.Text = "   ✉   Invite friends to join"
+	inviteRow.TextColor3 = WHITE
+	inviteRow.TextXAlignment = Enum.TextXAlignment.Left
+	inviteRow.TextSize = 15
+	inviteRow.Font = Enum.Font.GothamMedium
+	inviteRow.ZIndex = 203
+	inviteRow.Parent = peoplePage
+
+	local playerRow = Instance.new("Frame")
+	playerRow.Size = UDim2.new(1, 0, 0, 48)
+	playerRow.Position = UDim2.new(0, 0, 0, 52)
+	playerRow.BackgroundColor3 = OLD_MENU_ROW
+	playerRow.BackgroundTransparency = 0.25
+	playerRow.BorderSizePixel = 0
+	playerRow.ZIndex = 203
+	playerRow.Parent = peoplePage
+
+	local pDisplay = Instance.new("TextLabel")
+	pDisplay.Size = UDim2.new(1, -60, 0, 22)
+	pDisplay.Position = UDim2.new(0, 16, 0, 4)
+	pDisplay.BackgroundTransparency = 1
+	pDisplay.Text = player.DisplayName
+	pDisplay.TextColor3 = WHITE
+	pDisplay.TextXAlignment = Enum.TextXAlignment.Left
+	pDisplay.TextSize = 16
+	pDisplay.Font = Enum.Font.GothamMedium
+	pDisplay.ZIndex = 204
+	pDisplay.Parent = playerRow
+
+	local pUser = Instance.new("TextLabel")
+	pUser.Size = UDim2.new(1, -60, 0, 18)
+	pUser.Position = UDim2.new(0, 16, 0, 25)
+	pUser.BackgroundTransparency = 1
+	pUser.Text = "@" .. player.Name
+	pUser.TextColor3 = Color3.fromRGB(205, 208, 212)
+	pUser.TextXAlignment = Enum.TextXAlignment.Left
+	pUser.TextSize = 12
+	pUser.Font = Enum.Font.Gotham
+	pUser.ZIndex = 204
+	pUser.Parent = playerRow
+
+	local inspectIconBtn = Instance.new("TextButton")
+	inspectIconBtn.Size = UDim2.new(0, 30, 0, 30)
+	inspectIconBtn.Position = UDim2.new(1, -40, 0.5, -15)
+	inspectIconBtn.BackgroundColor3 = OLD_MENU_BAR
+	inspectIconBtn.BorderSizePixel = 0
+	inspectIconBtn.Text = "🔍"
+	inspectIconBtn.TextColor3 = WHITE
+	inspectIconBtn.TextScaled = true
+	inspectIconBtn.ZIndex = 204
+	inspectIconBtn.Parent = playerRow
+
+	for _, otherName in ipairs({ "Settings", "Report", "Help", "Record" }) do
+		local page = Instance.new("Frame")
+		page.Size = UDim2.new(1, 0, 1, 0)
+		page.BackgroundColor3 = OLD_MENU_ROW
+		page.BackgroundTransparency = 0.25
+		page.BorderSizePixel = 0
+		page.Visible = false
+		page.ZIndex = 202
+		page.Parent = contentArea
+		tabPages[otherName] = page
+
+		local info = Instance.new("TextLabel")
+		info.Size = UDim2.new(1, -24, 1, -24)
+		info.Position = UDim2.new(0, 12, 0, 12)
+		info.BackgroundTransparency = 1
+		info.Text = otherName .. " — Classic Menu"
+		info.TextColor3 = WHITE
+		info.TextSize = 15
+		info.Font = Enum.Font.GothamMedium
+		info.ZIndex = 203
+		info.Parent = page
+	end
+
+	local function selectTab(index: number, tabName: string)
+		activeTabUnderline.Position = UDim2.new((index - 1) * 0.2, 0, 1, -3)
+		for name, page in pairs(tabPages) do
+			page.Visible = (name == tabName)
+		end
+	end
+
+	for i, tName in ipairs(tabNames) do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0.2, 0, 1, 0)
+		btn.Position = UDim2.new((i - 1) * 0.2, 0, 0, 0)
+		btn.BackgroundTransparency = 1
+		btn.BorderSizePixel = 0
+		btn.Text = tName
+		btn.TextColor3 = (i == 1) and WHITE or Color3.fromRGB(190, 194, 200)
+		btn.TextSize = 13
+		btn.Font = (i == 1) and Enum.Font.GothamBold or Enum.Font.GothamMedium
+		btn.ZIndex = 203
+		btn.Parent = tabsBar
+		table.insert(tabButtons, btn)
+
+		btn.MouseButton1Click:Connect(function()
+			for idx, b in ipairs(tabButtons) do
+				b.TextColor3 = (idx == i) and WHITE or Color3.fromRGB(190, 194, 200)
+				b.Font = (idx == i) and Enum.Font.GothamBold or Enum.Font.GothamMedium
+			end
+			selectTab(i, tName)
+		end)
+	end
+
+	local bottomActionsBar = Instance.new("Frame")
+	bottomActionsBar.Size = UDim2.new(0, 560, 0, 44)
+	bottomActionsBar.Position = UDim2.new(0.5, 0, 0.86, 0)
+	bottomActionsBar.AnchorPoint = Vector2.new(0.5, 0.5)
+	bottomActionsBar.BackgroundTransparency = 1
+	bottomActionsBar.ZIndex = 202
+	bottomActionsBar.Parent = oldMenuOverlay
+
+	local function createBottomAction(xScale: number, keyBadge: string, actionLabel: string): TextButton
+		local container = Instance.new("TextButton")
+		container.Size = UDim2.new(0.32, 0, 1, 0)
+		container.Position = UDim2.new(xScale, 0, 0, 0)
+		container.BackgroundColor3 = OLD_MENU_BAR
+		container.BackgroundTransparency = 0.15
+		container.BorderSizePixel = 0
+		container.Text = ""
+		container.ZIndex = 203
+		container.Parent = bottomActionsBar
+
+		local badge = Instance.new("TextLabel")
+		badge.Size = UDim2.new(0, 34, 0, 28)
+		badge.Position = UDim2.new(0, 8, 0.5, -14)
+		badge.BackgroundColor3 = Color3.fromRGB(95, 102, 112)
+		badge.BorderSizePixel = 0
+		badge.Text = keyBadge
+		badge.TextColor3 = WHITE
+		badge.TextSize = 12
+		badge.Font = Enum.Font.GothamBold
+		badge.ZIndex = 204
+		badge.Parent = container
+
+		local bCorner = Instance.new("UICorner")
+		bCorner.CornerRadius = UDim.new(0, 4)
+		bCorner.Parent = badge
+
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, -50, 1, 0)
+		label.Position = UDim2.new(0, 48, 0, 0)
+		label.BackgroundTransparency = 1
+		label.Text = actionLabel
+		label.TextColor3 = WHITE
+		label.TextXAlignment = Enum.TextXAlignment.Center
+		label.TextSize = 13
+		label.Font = Enum.Font.GothamBold
+		label.ZIndex = 204
+		label.Parent = container
+
+		return container
+	end
+
+	local resetCharActionBtn = createBottomAction(0, "R", "Reset Character")
+	local leaveActionBtn = createBottomAction(0.34, "L", "Leave")
+	local resumeActionBtn = createBottomAction(0.68, "ESC", "Resume")
+
+	local function closeOldMenu()
+		oldMenuOverlay.Visible = false
+	end
+
+	local function openOldMenu()
+		oldMenuOverlay.Visible = true
+	end
+
+	local function triggerResetCharacter()
+		closeOldMenu()
+		local char = player.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.Health = 0
+		end
+	end
+
+	local function triggerLeaveGame()
+		closeOldMenu()
+		pcall(function()
+			GuiService:BroadcastLeaving()
+		end)
+		showNotification("Leave Game", "Use the Roblox menu / close button to exit the place.", 3)
+	end
+
+	resetCharActionBtn.MouseButton1Click:Connect(triggerResetCharacter)
+	leaveActionBtn.MouseButton1Click:Connect(triggerLeaveGame)
+	resumeActionBtn.MouseButton1Click:Connect(closeOldMenu)
+
+	local oldChatContainer = Instance.new("Frame")
+	oldChatContainer.Name = "OldChatContainer"
+	oldChatContainer.Size = UDim2.new(0, 320, 0, 152)
+	oldChatContainer.Position = UDim2.new(0, 10, 0, 110)
+	oldChatContainer.BackgroundColor3 = TOPBAR_BG
+	oldChatContainer.BackgroundTransparency = 0.2
+	oldChatContainer.BorderColor3 = SLOT_BORDER
+	oldChatContainer.BorderSizePixel = 1
+	oldChatContainer.Visible = true
+	oldChatContainer.Parent = screenGui
+
+	local classicGrayLine = Instance.new("Frame")
+	classicGrayLine.Name = "ClassicGrayLine"
+	classicGrayLine.Size = UDim2.new(1, 0, 0, 2)
+	classicGrayLine.Position = UDim2.new(0, 0, 0, 0)
+	classicGrayLine.BackgroundColor3 = SLOT_BORDER
+	classicGrayLine.BorderSizePixel = 0
+	classicGrayLine.Parent = oldChatContainer
+
+	local messagesScroll = Instance.new("ScrollingFrame")
+	messagesScroll.Size = UDim2.new(1, -12, 1, -38)
+	messagesScroll.Position = UDim2.new(0, 6, 0, 6)
+	messagesScroll.BackgroundTransparency = 1
+	messagesScroll.BorderSizePixel = 0
+	messagesScroll.ScrollBarThickness = 4
+	messagesScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	messagesScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	messagesScroll.Parent = oldChatContainer
+
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Padding = UDim.new(0, 2)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Parent = messagesScroll
+
+	local function appendOldMessage(prefix: string, body: string, colorHex: string)
+		if not oldGuiEnabled or myToken ~= guiToken then
+			return
+		end
+		local line = Instance.new("TextLabel")
+		line.Size = UDim2.new(1, -4, 0, 18)
+		line.BackgroundTransparency = 1
+		line.TextColor3 = WHITE
+		line.TextXAlignment = Enum.TextXAlignment.Left
+		line.TextSize = 14
+		line.Font = Enum.Font.SourceSansBold
+		line.TextWrapped = true
+		line.AutomaticSize = Enum.AutomaticSize.Y
+		line.RichText = true
+		line.Text = string.format('<font color="%s">%s:</font> %s', colorHex, prefix, body)
+		line.Parent = messagesScroll
+		messagesScroll.CanvasPosition = Vector2.new(0, messagesScroll.AbsoluteCanvasSize.Y)
+	end
+
+	appendOldMessage("System", "Old Roblox chat & bubble enabled.", "#ffd25a")
+
+	local inputBar = Instance.new("Frame")
+	inputBar.Size = UDim2.new(1, -12, 0, 26)
+	inputBar.Position = UDim2.new(0, 6, 1, -30)
+	inputBar.BackgroundColor3 = SLOT_BG
+	inputBar.BorderColor3 = SLOT_BORDER
+	inputBar.BorderSizePixel = 1
+	inputBar.Parent = oldChatContainer
+
+	local chatBox = Instance.new("TextBox")
+	chatBox.Size = UDim2.new(1, -12, 1, 0)
+	chatBox.Position = UDim2.new(0, 6, 0, 0)
+	chatBox.BackgroundTransparency = 1
+	chatBox.PlaceholderText = "Click here or press '/' to chat"
+	chatBox.PlaceholderColor3 = Color3.fromRGB(185, 188, 192)
+	chatBox.Text = ""
+	chatBox.TextColor3 = WHITE
+	chatBox.TextXAlignment = Enum.TextXAlignment.Left
+	chatBox.TextSize = 14
+	chatBox.Font = Enum.Font.SourceSans
+	chatBox.ClearTextOnFocus = false
+	chatBox.Parent = inputBar
+
+	rMenuBtn.MouseButton1Click:Connect(function()
+		if not oldGuiEnabled or myToken ~= guiToken then
+			return
+		end
+		if oldMenuOverlay.Visible then
+			closeOldMenu()
+		else
+			openOldMenu()
+		end
+	end)
+
+	serverChatBtn.MouseButton1Click:Connect(function()
+		if not oldGuiEnabled or myToken ~= guiToken then
+			return
+		end
+		oldChatContainer.Visible = not oldChatContainer.Visible
+	end)
+
+	local function sendMessage()
+		if not oldGuiEnabled or myToken ~= guiToken then
+			return
+		end
+		local msg = chatBox.Text
+		if msg == "" or string.match(msg, "^%s*$") then
+			return
+		end
+		chatBox.Text = ""
+		appendOldMessage(player.DisplayName, msg, "#8ad2ff")
+		showClassicBubbleAboveCharacter(player.Character, msg, myToken)
+
+		pcall(function()
+			local general = TextChatService:FindFirstChild("TextChannels")
+				and TextChatService.TextChannels:FindFirstChild("RBXGeneral")
+			if general and general:IsA("TextChannel") then
+				general:SendAsync(msg)
+			end
+		end)
+	end
+
+	chatBox.FocusLost:Connect(function(enterPressed: boolean)
+		if enterPressed then
+			sendMessage()
+		end
+	end)
+
+	pcall(function()
+		local conn = TextChatService.MessageReceived:Connect(function(tcm: TextChatMessage)
+			if not oldGuiEnabled or myToken ~= guiToken then
+				return
+			end
+			local senderName = tcm.TextSource and tcm.TextSource.Name or "Player"
+			if senderName ~= player.Name then
+				appendOldMessage(senderName, tcm.Text, "#9be59b")
+				local senderPlr = Players:FindFirstChild(senderName)
+				if senderPlr and senderPlr:IsA("Player") then
+					showClassicBubbleAboveCharacter(senderPlr.Character, tcm.Text, myToken)
+				end
+			end
+		end)
+		table.insert(guiConnections, conn)
+	end)
+
+	table.insert(guiConnections, UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessed: boolean)
+		if not oldGuiEnabled or myToken ~= guiToken then
+			return
+		end
+		if oldMenuOverlay.Visible then
+			if input.KeyCode == Enum.KeyCode.Escape then
+				closeOldMenu()
+				return
+			elseif input.KeyCode == Enum.KeyCode.R then
+				triggerResetCharacter()
+				return
+			elseif input.KeyCode == Enum.KeyCode.L then
+				triggerLeaveGame()
+				return
+			end
+		end
+		if not gameProcessed and input.KeyCode == Enum.KeyCode.Slash and oldChatContainer.Visible then
+			task.defer(function()
+				if oldGuiEnabled and myToken == guiToken and chatBox.Parent then
+					chatBox:CaptureFocus()
+				end
+			end)
+		end
+	end))
+end
+
+-- === FUNZIONE 4: OLD AVATAR ALL (Tutti noob, senza roba/vestiti addosso, faccia classica smile) ===
+
+local function getNoobColor(partName: string): Color3?
+	local lower = string.lower(partName)
+	if lower == "head" then
+		return NOOB_HEAD_COLOR
+	elseif string.find(lower, "torso", 1, true) then
+		return NOOB_TORSO_COLOR
+	elseif string.find(lower, "arm", 1, true) or string.find(lower, "hand", 1, true) then
+		return NOOB_ARM_COLOR
+	elseif string.find(lower, "leg", 1, true) or string.find(lower, "foot", 1, true) then
+		return NOOB_LEG_COLOR
+	end
+	return nil
+end
+
+local function isCharacterModel(model: Instance): boolean
+	return model:IsA("Model") and model:FindFirstChildOfClass("Humanoid") ~= nil
+end
+
+local function applyNoobAllToCharacter(character: Model, myToken: number)
+	if not oldAvatarAllEnabled or myToken ~= avatarAllToken or not character.Parent then
+		return
+	end
+
+	local backup = noobAllBackups[character]
+	if not backup then
+		backup = {
+			Parts = {},
+			Decals = {},
+			Clothing = {},
+			AddedFace = nil,
+		}
+		noobAllBackups[character] = backup
+	end
+
+	for _, child in ipairs(character:GetChildren()) do
+		if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("ShirtGraphic") or child:IsA("Accessory") then
+			table.insert(backup.Clothing, {
+				Instance = child,
+				Parent = child.Parent,
+			})
+			child.Parent = nil
+		end
+	end
+
+	for _, desc in ipairs(character:GetDescendants()) do
+		if desc:IsA("BasePart") and desc.Name ~= "HumanoidRootPart" then
+			local noobCol = getNoobColor(desc.Name)
+			if noobCol then
+				if not backup.Parts[desc] then
+					backup.Parts[desc] = {
+						Color = desc.Color,
+						Material = desc.Material,
+						Transparency = desc.Transparency,
+					}
+				end
+				desc.Color = noobCol
+				desc.Material = Enum.Material.SmoothPlastic
+				desc.Transparency = 0
+			end
+		elseif desc:IsA("Decal") and desc.Name ~= "ClassicNoobSmile" then
+			table.insert(backup.Decals, {
+				Decal = desc,
+				Texture = desc.Texture,
+				Transparency = desc.Transparency,
+			})
+			desc.Transparency = 1
+		end
+	end
+
+	local head = character:FindFirstChild("Head") :: BasePart?
+	if head then
+		local existing = head:FindFirstChild("ClassicNoobSmile")
+		if existing and existing:IsA("Decal") then
+			existing.Texture = NOOB_SMILE_FACE
+			existing.Transparency = 0
+			backup.AddedFace = existing
+		elseif not backup.AddedFace then
+			local face = Instance.new("Decal")
+			face.Name = "ClassicNoobSmile"
+			face.Face = Enum.NormalId.Front
+			face.Texture = NOOB_SMILE_FACE
+			face.Transparency = 0
+			face.Parent = head
+			backup.AddedFace = face
+		end
+	end
+end
+
+local function restoreNoobAllCharacters()
+	for character, backup in pairs(noobAllBackups) do
+		if backup.AddedFace and backup.AddedFace.Parent then
+			backup.AddedFace:Destroy()
+		end
+		for _, cState in ipairs(backup.Clothing) do
+			if cState.Instance and cState.Parent and character.Parent then
+				cState.Instance.Parent = cState.Parent
+			end
+		end
+		for part, state in pairs(backup.Parts) do
+			if part and part.Parent then
+				part.Color = state.Color
+				part.Material = state.Material
+				part.Transparency = state.Transparency
+			end
+		end
+		for _, dState in ipairs(backup.Decals) do
+			if dState.Decal and dState.Decal.Parent then
+				dState.Decal.Texture = dState.Texture
+				dState.Decal.Transparency = dState.Transparency
+			end
+		end
+	end
+	table.clear(noobAllBackups)
+end
+
+local function disableOldAvatarAll()
+	oldAvatarAllEnabled = false
+	avatarAllToken += 1
+	clearConnections(avatarAllConnections)
+	restoreNoobAllCharacters()
+end
+
+local function enableOldAvatarAll()
+	disableOldAvatarAll()
+	oldAvatarAllEnabled = true
+	local myToken = avatarAllToken
+
+	if player.Character then
+		applyNoobAllToCharacter(player.Character, myToken)
+	end
+
+	for _, child in ipairs(Workspace:GetChildren()) do
+		if isCharacterModel(child) then
+			applyNoobAllToCharacter(child :: Model, myToken)
+		end
+	end
+
+	table.insert(avatarAllConnections, Workspace.ChildAdded:Connect(function(child)
+		if not oldAvatarAllEnabled or myToken ~= avatarAllToken then
+			return
+		end
+		if child:IsA("Model") then
+			task.delay(0.15, function()
+				if oldAvatarAllEnabled and myToken == avatarAllToken and isCharacterModel(child) then
+					applyNoobAllToCharacter(child, myToken)
+				end
+			end)
+		end
+	end))
+end
+
+-- === FUNZIONE 5: NO ANIM ALL ===
+
+local function applyNoAnimToOtherCharacter(character: Model, myToken: number)
+	if not noAnimAllEnabled or myToken ~= noAnimAllToken or character == player.Character or not character.Parent then
+		return
+	end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+
+	local backup = noAnimAllBackups[character]
+	if not backup then
+		backup = {
+			DisabledScripts = {},
+			PoseConn = nil,
+		}
+		noAnimAllBackups[character] = backup
+	end
+
+	for _, desc in ipairs(character:GetDescendants()) do
+		if (desc:IsA("LocalScript") or desc:IsA("Script")) and desc.Name == "Animate" and desc.Enabled then
+			desc.Enabled = false
+			table.insert(backup.DisabledScripts, desc)
+		end
+	end
+
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	if animator then
+		for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
+			track:Stop(0)
+		end
+	end
+
+	if not backup.PoseConn then
+		local motors: { Motor6D } = {}
+		for _, desc in ipairs(character:GetDescendants()) do
+			if desc:IsA("Motor6D") then
+				table.insert(motors, desc)
+			end
+		end
+
+		backup.PoseConn = RunService.Stepped:Connect(function()
+			if not noAnimAllEnabled or myToken ~= noAnimAllToken or not character.Parent then
+				return
+			end
+			local curAnimator = humanoid:FindFirstChildOfClass("Animator")
+			if curAnimator then
+				for _, track in ipairs(curAnimator:GetPlayingAnimationTracks()) do
+					track:Stop(0)
+				end
+			end
+			local isR15 = humanoid.RigType == Enum.HumanoidRigType.R15
+			for _, m in ipairs(motors) do
+				if m.Parent then
+					if isR15 then
+						m.Transform = R15_STATIC_R6_OFFSETS[m.Name] or CFrame.new()
+					else
+						m.Transform = CFrame.new()
+					end
+				end
+			end
+		end)
+	end
+end
+
+local function restoreNoAnimAllCharacters()
+	for character, backup in pairs(noAnimAllBackups) do
+		if backup.PoseConn then
+			backup.PoseConn:Disconnect()
+			backup.PoseConn = nil
+		end
+		for _, scr in ipairs(backup.DisabledScripts) do
+			if scr and scr.Parent then
+				scr.Enabled = true
+			end
+		end
+		if character and character.Parent then
+			for _, desc in ipairs(character:GetDescendants()) do
+				if desc:IsA("Motor6D") then
+					desc.Transform = CFrame.new()
+				end
+			end
+		end
+	end
+	table.clear(noAnimAllBackups)
+end
+
+local function disableNoAnimAll()
+	noAnimAllEnabled = false
+	noAnimAllToken += 1
+	clearConnections(noAnimAllConnections)
+	restoreNoAnimAllCharacters()
+end
+
+local function enableNoAnimAll()
+	disableNoAnimAll()
+	noAnimAllEnabled = true
+	local myToken = noAnimAllToken
+
+	for _, child in ipairs(Workspace:GetChildren()) do
+		if isCharacterModel(child) and child ~= player.Character then
+			applyNoAnimToOtherCharacter(child :: Model, myToken)
+		end
+	end
+
+	table.insert(noAnimAllConnections, Workspace.ChildAdded:Connect(function(child)
+		if not noAnimAllEnabled or myToken ~= noAnimAllToken then
+			return
+		end
+		if child:IsA("Model") and child ~= player.Character then
+			task.delay(0.15, function()
+				if noAnimAllEnabled and myToken == noAnimAllToken and isCharacterModel(child) then
+					applyNoAnimToOtherCharacter(child, myToken)
+				end
+			end)
+		end
+	end))
+end
+
+-- === FUNZIONE 6: OLD JUMP SOUND (129512638771628) ===
+
+local function playOldJumpSound(parentTarget: Instance?)
+	local sound = Instance.new("Sound")
+	sound.Name = "OldJumpSoundEffect"
+	sound.SoundId = OLD_JUMP_SOUND_ID
+	sound.Volume = 0.85
+	sound.Parent = parentTarget or SoundService
+	sound:Play()
+	sound.Ended:Connect(function()
+		if sound and sound.Parent then
+			sound:Destroy()
+		end
+	end)
+	task.delay(5, function()
+		if sound and sound.Parent then
+			sound:Destroy()
+		end
+	end)
+end
+
+local function hookCharacterJumpSound(character: Model, myToken: number)
+	if not oldJumpSoundEnabled or myToken ~= jumpSoundToken or not character.Parent then
+		return
+	end
+
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	local root = character:FindFirstChild("HumanoidRootPart")
+
+	local function patchJumpingSounds(container: Instance)
+		for _, desc in ipairs(container:GetDescendants()) do
+			if desc:IsA("Sound") and string.lower(desc.Name) == "jumping" then
+				local alreadySaved = false
+				for _, item in ipairs(jumpSoundBackups) do
+					if item.Sound == desc then
+						alreadySaved = true
+						break
+					end
+				end
+				if not alreadySaved then
+					table.insert(jumpSoundBackups, {
+						Sound = desc,
+						SoundId = desc.SoundId,
+					})
+				end
+				desc.SoundId = OLD_JUMP_SOUND_ID
+			end
+		end
+	end
+
+	patchJumpingSounds(character)
+
+	table.insert(jumpSoundConnections, character.DescendantAdded:Connect(function(desc)
+		if not oldJumpSoundEnabled or myToken ~= jumpSoundToken then
+			return
+		end
+		if desc:IsA("Sound") and string.lower(desc.Name) == "jumping" then
+			table.insert(jumpSoundBackups, {
+				Sound = desc,
+				SoundId = desc.SoundId,
+			})
+			desc.SoundId = OLD_JUMP_SOUND_ID
+		end
+	end))
+
+	local function triggerJumpAudio()
+		if not oldJumpSoundEnabled or myToken ~= jumpSoundToken then
+			return
+		end
+		local now = os.clock()
+		if now - lastJumpTriggerTime < 0.12 then
+			return
+		end
+		lastJumpTriggerTime = now
+		playOldJumpSound(root or character)
+	end
+
+	if humanoid then
+		table.insert(jumpSoundConnections, humanoid.Jumping:Connect(function(isJumping: boolean)
+			if isJumping then
+				triggerJumpAudio()
+			end
+		end))
+
+		table.insert(jumpSoundConnections, humanoid.StateChanged:Connect(function(_, newState: Enum.HumanoidStateType)
+			if newState == Enum.HumanoidStateType.Jumping then
+				triggerJumpAudio()
+			end
+		end))
+	end
+end
+
+local function disableOldJumpSound()
+	oldJumpSoundEnabled = false
+	jumpSoundToken += 1
+	clearConnections(jumpSoundConnections)
+
+	for _, item in ipairs(jumpSoundBackups) do
+		if item.Sound and item.Sound.Parent then
+			item.Sound.SoundId = item.SoundId
+		end
+	end
+	table.clear(jumpSoundBackups)
+end
+
+local function enableOldJumpSound()
+	disableOldJumpSound()
+	oldJumpSoundEnabled = true
+	local myToken = jumpSoundToken
+
+	if player.Character then
+		hookCharacterJumpSound(player.Character, myToken)
+	end
+end
+
+-- === DRAG UI ===
+
+local function makeDraggable(guiObject: GuiObject)
+	local dragging = false
+	local dragInput: InputObject? = nil
+	local dragStart = Vector3.zero
+	local startPos = UDim2.new()
+	local moved = false
+
+	guiObject.InputBegan:Connect(function(input: InputObject)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			moved = false
+			dragStart = input.Position
+			startPos = guiObject.Position
+			dragInput = input
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+					dragInput = nil
+				end
+			end)
+		end
+	end)
+
+	guiObject.InputChanged:Connect(function(input: InputObject)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			dragInput = input
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input: InputObject)
+		if dragging and input == dragInput then
+			local delta = input.Position - dragStart
+			if delta.Magnitude > 6 then
+				moved = true
+			end
+			guiObject.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+
+	return function(): boolean
+		local wasMoved = moved
+		moved = false
+		return wasMoved
+	end
+end
+
+local updateButtonsUI: (() -> ())? = nil
+
+local function buildUI()
+	local playerGui = player:WaitForChild("PlayerGui")
+	local existing = playerGui:FindFirstChild("OldAvatarPanelGui")
+	if existing then
+		existing:Destroy()
+	end
+
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "OldAvatarPanelGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.IgnoreGuiInset = false
+	screenGui.DisplayOrder = 100
+	screenGui.Parent = playerGui
+
+	local miniButton = Instance.new("TextButton")
+	miniButton.Name = "MinimizedRButton"
+	miniButton.Size = UDim2.new(0, 52, 0, 52)
+	miniButton.Position = UDim2.new(0.5, 0, 0.5, 0)
+	miniButton.AnchorPoint = Vector2.new(0.5, 0.5)
+	miniButton.BackgroundColor3 = WHITE
+	miniButton.BorderColor3 = BORDER_COLOR
+	miniButton.BorderSizePixel = 1
+	miniButton.Text = "R"
+	miniButton.TextColor3 = RED
+	miniButton.TextScaled = true
+	miniButton.Font = Enum.Font.GothamBlack
+	miniButton.Visible = true
+	miniButton.Parent = screenGui
+
+	local mainPanel = Instance.new("Frame")
+	mainPanel.Name = "ExpandedPanel"
+	mainPanel.Size = UDim2.new(0, 236, 0, 378)
+	mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
+	mainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
+	mainPanel.BackgroundColor3 = WHITE
+	mainPanel.BorderColor3 = BORDER_COLOR
+	mainPanel.BorderSizePixel = 1
+	mainPanel.Visible = false
+	mainPanel.Parent = screenGui
+
+	local topBar = Instance.new("Frame")
+	topBar.Size = UDim2.new(1, 0, 0, 32)
+	topBar.BackgroundColor3 = WHITE
+	topBar.BorderColor3 = BORDER_COLOR
+	topBar.BorderSizePixel = 1
+	topBar.Parent = mainPanel
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -40, 1, 0)
+	titleLabel.Position = UDim2.new(0, 8, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = "Remawed10 old roblox"
+	titleLabel.TextColor3 = RED
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.TextScaled = true
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.Parent = topBar
+
+	local minimizeBtn = Instance.new("TextButton")
+	minimizeBtn.Name = "MinimizeButton"
+	minimizeBtn.Size = UDim2.new(0, 32, 0, 32)
+	minimizeBtn.Position = UDim2.new(1, -32, 0, 0)
+	minimizeBtn.BackgroundColor3 = GRAY_BTN
+	minimizeBtn.BorderColor3 = BORDER_COLOR
+	minimizeBtn.BorderSizePixel = 1
+	minimizeBtn.Text = "-"
+	minimizeBtn.TextColor3 = RED
+	minimizeBtn.TextScaled = true
+	minimizeBtn.Font = Enum.Font.GothamBlack
+	minimizeBtn.Parent = topBar
+
+	local oldAvatarBtn = Instance.new("TextButton")
+	oldAvatarBtn.Name = "OldAvatarButton"
+	oldAvatarBtn.Size = UDim2.new(1, -20, 0, 42)
+	oldAvatarBtn.Position = UDim2.new(0, 10, 0, 42)
+	oldAvatarBtn.BackgroundColor3 = GRAY_BTN
+	oldAvatarBtn.BorderColor3 = BORDER_COLOR
+	oldAvatarBtn.BorderSizePixel = 1
+	oldAvatarBtn.Text = "OLD AVATAR: OFF"
+	oldAvatarBtn.TextColor3 = RED
+	oldAvatarBtn.TextScaled = true
+	oldAvatarBtn.Font = Enum.Font.GothamBold
+	oldAvatarBtn.Parent = mainPanel
+
+	local oldGraphicsBtn = Instance.new("TextButton")
+	oldGraphicsBtn.Name = "OldGraphicsButton"
+	oldGraphicsBtn.Size = UDim2.new(1, -20, 0, 42)
+	oldGraphicsBtn.Position = UDim2.new(0, 10, 0, 94)
+	oldGraphicsBtn.BackgroundColor3 = GRAY_BTN
+	oldGraphicsBtn.BorderColor3 = BORDER_COLOR
+	oldGraphicsBtn.BorderSizePixel = 1
+	oldGraphicsBtn.Text = "OLD GRAPHICS: OFF"
+	oldGraphicsBtn.TextColor3 = RED
+	oldGraphicsBtn.TextScaled = true
+	oldGraphicsBtn.Font = Enum.Font.GothamBold
+	oldGraphicsBtn.Parent = mainPanel
+
+	local oldGuiBtn = Instance.new("TextButton")
+	oldGuiBtn.Name = "OldGuiButton"
+	oldGuiBtn.Size = UDim2.new(1, -20, 0, 42)
+	oldGuiBtn.Position = UDim2.new(0, 10, 0, 146)
+	oldGuiBtn.BackgroundColor3 = GRAY_BTN
+	oldGuiBtn.BorderColor3 = BORDER_COLOR
+	oldGuiBtn.BorderSizePixel = 1
+	oldGuiBtn.Text = "OLD GUI: OFF"
+	oldGuiBtn.TextColor3 = RED
+	oldGuiBtn.TextScaled = true
+	oldGuiBtn.Font = Enum.Font.GothamBold
+	oldGuiBtn.Parent = mainPanel
+
+	local oldAvatarAllBtn = Instance.new("TextButton")
+	oldAvatarAllBtn.Name = "OldAvatarAllButton"
+	oldAvatarAllBtn.Size = UDim2.new(1, -20, 0, 42)
+	oldAvatarAllBtn.Position = UDim2.new(0, 10, 0, 198)
+	oldAvatarAllBtn.BackgroundColor3 = GRAY_BTN
+	oldAvatarAllBtn.BorderColor3 = BORDER_COLOR
+	oldAvatarAllBtn.BorderSizePixel = 1
+	oldAvatarAllBtn.Text = "OLD AVATAR ALL: OFF"
+	oldAvatarAllBtn.TextColor3 = RED
+	oldAvatarAllBtn.TextScaled = true
+	oldAvatarAllBtn.Font = Enum.Font.GothamBold
+	oldAvatarAllBtn.Parent = mainPanel
+
+	local noAnimAllBtn = Instance.new("TextButton")
+	noAnimAllBtn.Name = "NoAnimAllButton"
+	noAnimAllBtn.Size = UDim2.new(1, -20, 0, 42)
+	noAnimAllBtn.Position = UDim2.new(0, 10, 0, 250)
+	noAnimAllBtn.BackgroundColor3 = GRAY_BTN
+	noAnimAllBtn.BorderColor3 = BORDER_COLOR
+	noAnimAllBtn.BorderSizePixel = 1
+	noAnimAllBtn.Text = "NO ANIM ALL: OFF"
+	noAnimAllBtn.TextColor3 = RED
+	noAnimAllBtn.TextScaled = true
+	noAnimAllBtn.Font = Enum.Font.GothamBold
+	noAnimAllBtn.Parent = mainPanel
+
+	local oldJumpSoundBtn = Instance.new("TextButton")
+	oldJumpSoundBtn.Name = "OldJumpSoundButton"
+	oldJumpSoundBtn.Size = UDim2.new(1, -20, 0, 42)
+	oldJumpSoundBtn.Position = UDim2.new(0, 10, 0, 302)
+	oldJumpSoundBtn.BackgroundColor3 = GRAY_BTN
+	oldJumpSoundBtn.BorderColor3 = BORDER_COLOR
+	oldJumpSoundBtn.BorderSizePixel = 1
+	oldJumpSoundBtn.Text = "OLD JUMP SOUND: OFF"
+	oldJumpSoundBtn.TextColor3 = RED
+	oldJumpSoundBtn.TextScaled = true
+	oldJumpSoundBtn.Font = Enum.Font.GothamBold
+	oldJumpSoundBtn.Parent = mainPanel
+
+	updateButtonsUI = function()
+		oldAvatarBtn.BackgroundColor3 = oldAvatarEnabled and GRAY_BTN_ACTIVE or GRAY_BTN
+		oldAvatarBtn.Text = oldAvatarEnabled and "OLD animation: ON" or "OLD animation: OFF"
+
+		oldGraphicsBtn.BackgroundColor3 = oldGraphicsEnabled and GRAY_BTN_ACTIVE or GRAY_BTN
+		oldGraphicsBtn.Text = oldGraphicsEnabled and "OLD GRAPHICS: ON" or "OLD GRAPHICS: OFF"
+
+		oldGuiBtn.BackgroundColor3 = oldGuiEnabled and GRAY_BTN_ACTIVE or GRAY_BTN
+		oldGuiBtn.Text = oldGuiEnabled and "OLD GUI: ON" or "OLD GUI: OFF"
+
+		oldAvatarAllBtn.BackgroundColor3 = oldAvatarAllEnabled and GRAY_BTN_ACTIVE or GRAY_BTN
+		oldAvatarAllBtn.Text = oldAvatarAllEnabled and "OLD AVATAR ALL: ON" or "OLD AVATAR ALL: OFF"
+
+		noAnimAllBtn.BackgroundColor3 = noAnimAllEnabled and GRAY_BTN_ACTIVE or GRAY_BTN
+		noAnimAllBtn.Text = noAnimAllEnabled and "NO ANIM ALL: ON" or "NO ANIM ALL: OFF"
+
+		oldJumpSoundBtn.BackgroundColor3 = oldJumpSoundEnabled and GRAY_BTN_ACTIVE or GRAY_BTN
+		oldJumpSoundBtn.Text = oldJumpSoundEnabled and "OLD JUMP SOUND: ON" or "OLD JUMP SOUND: OFF"
+	end
+
+	local didDragMini = makeDraggable(miniButton)
+	local didDragPanel = makeDraggable(mainPanel)
+
+	miniButton.MouseButton1Click:Connect(function()
+		if didDragMini() then
+			return
+		end
+		mainPanel.Position = miniButton.Position
+		miniButton.Visible = false
+		mainPanel.Visible = true
+		mainPanel.Size = UDim2.new(0, 175, 0, 240)
+		TweenService:Create(
+			mainPanel,
+			TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+			{ Size = UDim2.new(0, 236, 0, 378) }
+		):Play()
+	end)
+
+	minimizeBtn.MouseButton1Click:Connect(function()
+		miniButton.Position = mainPanel.Position
+		mainPanel.Visible = false
+		miniButton.Visible = true
+	end)
+
+	oldAvatarBtn.MouseButton1Click:Connect(function()
+		if didDragPanel() then
+			return
+		end
+		if oldAvatarEnabled then
+			disableOldAvatar()
+			if updateButtonsUI then
+				updateButtonsUI()
+			end
+		else
+			oldAvatarEnabled = true
+			avatarToken += 1
+			local myToken = avatarToken
+			if updateButtonsUI then
+				updateButtonsUI()
+			end
+			task.spawn(function()
+				activateOldAvatarFlow(myToken)
+				if updateButtonsUI then
+					updateButtonsUI()
+				end
+			end)
+		end
+	end)
+
+	oldGraphicsBtn.MouseButton1Click:Connect(function()
+		if didDragPanel() then
+			return
+		end
+		if oldGraphicsEnabled then
+			disableOldGraphics()
+		else
+			enableOldGraphics()
+		end
+		if updateButtonsUI then
+			updateButtonsUI()
+		end
+	end)
+
+	oldGuiBtn.MouseButton1Click:Connect(function()
+		if didDragPanel() then
+			return
+		end
+		if oldGuiEnabled then
+			disableOldGui()
+		else
+			enableOldGui()
+		end
+		if updateButtonsUI then
+			updateButtonsUI()
+		end
+	end)
+
+	oldAvatarAllBtn.MouseButton1Click:Connect(function()
+		if didDragPanel() then
+			return
+		end
+		if oldAvatarAllEnabled then
+			disableOldAvatarAll()
+		else
+			enableOldAvatarAll()
+		end
+		if updateButtonsUI then
+			updateButtonsUI()
+		end
+	end)
+
+	noAnimAllBtn.MouseButton1Click:Connect(function()
+		if didDragPanel() then
+			return
+		end
+		if noAnimAllEnabled then
+			disableNoAnimAll()
+		else
+			enableNoAnimAll()
+		end
+		if updateButtonsUI then
+			updateButtonsUI()
+		end
+	end)
+
+	oldJumpSoundBtn.MouseButton1Click:Connect(function()
+		if didDragPanel() then
+			return
+		end
+		if oldJumpSoundEnabled then
+			disableOldJumpSound()
+		else
+			enableOldJumpSound()
+		end
+		if updateButtonsUI then
+			updateButtonsUI()
+		end
+	end)
+end
+
+local function onCharacterAdded(character: Model)
+	cacheAnimateScript(character)
+	local root = character:WaitForChild("HumanoidRootPart") :: BasePart
+	character:WaitForChild("Humanoid")
+
+	task.wait(0.12)
+
+	if waitingToRestorePosition and savedCFrame and oldAvatarEnabled then
+		waitingToRestorePosition = false
+		if character.Parent and root.Parent then
+			character:PivotTo(savedCFrame)
+		end
+	else
+		waitingToRestorePosition = false
+		savedCFrame = nil
+	end
+
+	if oldAvatarEnabled then
+		applyStaticR6Pose(character, avatarToken)
+	else
+		restoreAnimations(character)
+	end
+
+	if oldGraphicsEnabled then
+		applyStudsToContainer(character, graphicsToken)
+	end
+
+	if oldAvatarAllEnabled then
+		applyNoobAllToCharacter(character, avatarAllToken)
+	end
+
+	if oldJumpSoundEnabled then
+		hookCharacterJumpSound(character, jumpSoundToken)
+	end
+
+	if updateButtonsUI then
+		updateButtonsUI()
+	end
+end
+
+buildUI()
+
+if player.Character then
+	task.spawn(onCharacterAdded, player.Character)
+end
+
+player.CharacterAdded:Connect(onCharacterAdded)
